@@ -27,4 +27,12 @@ export class UsersService {
     });
     return new UserEntity(updatedUser);
   }
+
+  async updateMetadata(id: string, metadata: Record<string, any>): Promise<UserEntity> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { metadata: metadata as any },
+    });
+    return new UserEntity(updatedUser);
+  }
 }

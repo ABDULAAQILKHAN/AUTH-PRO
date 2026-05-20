@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto, ForgotPasswordDto, UpdatePasswordDto, TokenEntity } from './dto/auth.dto';
@@ -42,5 +42,14 @@ export class AuthController {
   async updatePassword(@Body() updatePasswordDto: UpdatePasswordDto): Promise<{ message: string }> {
     await this.authService.updatePassword(updatePasswordDto);
     return { message: 'Password successfully updated.' };
+  }
+
+  @Get('verify-email')
+  @ApiOperation({ summary: 'Verify user email address' })
+  @ApiResponse({ status: 200, description: 'Email successfully verified.' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token.' })
+  async verifyEmail(@Query('token') token: string): Promise<{ message: string }> {
+    await this.authService.verifyEmail(token);
+    return { message: 'Email successfully verified.' };
   }
 }

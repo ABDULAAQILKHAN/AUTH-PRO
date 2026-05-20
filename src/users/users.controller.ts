@@ -1,10 +1,11 @@
-import { Controller, Get, Post, UseGuards, UseInterceptors, UploadedFile, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, UseInterceptors, UploadedFile, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { StorageService } from '../storage/storage.service';
 import { UserEntity } from './entities/user.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -22,6 +23,16 @@ export class UsersController {
   async getProfile(@Request() req: any): Promise<UserEntity> {
     const user = await this.usersService.findById(req.user.userId);
     return new UserEntity(user);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user metadata' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully.', type: UserEntity })
+  async updateProfile(
+    @Request() req: any,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserEntity> {
+    return this.usersService.updateMetadata(req.user.userId, updateUserDto.metadata || {});
   }
 
   @Post('avatar')

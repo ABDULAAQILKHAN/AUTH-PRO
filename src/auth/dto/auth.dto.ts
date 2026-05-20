@@ -1,15 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, MinLength, Matches, IsOptional, IsObject } from 'class-validator';
 
 export class SignupDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'password123', minLength: 6 })
+  @ApiProperty({ example: 'Password123!', description: 'Must contain at least one uppercase letter, one lowercase letter, one number and one special character' })
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, {
+    message: 'password too weak. Must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character',
+  })
   password: string;
+
+  @ApiProperty({
+    required: false,
+    example: {
+      name: 'John Doe',
+      phone: '+1234567890',
+      additionalEmail: 'john@example.com',
+      address: '123 Main St'
+    }
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
 }
 
 export class LoginDto {
@@ -33,9 +49,12 @@ export class UpdatePasswordDto {
   @IsNotEmpty()
   token: string;
 
-  @ApiProperty({ example: 'newpassword123', minLength: 6 })
+  @ApiProperty({ example: 'NewPassword123!', description: 'Must contain at least one uppercase letter, one lowercase letter, one number and one special character' })
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, {
+    message: 'password too weak. Must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character',
+  })
   newPassword: string;
 }
 

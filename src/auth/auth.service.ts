@@ -25,15 +25,20 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(signupDto.password, 10);
+    const verificationToken = randomBytes(32).toString('hex');
 
     const user = await this.prisma.user.create({
       data: {
         email: signupDto.email,
         password: hashedPassword,
+        metadata: signupDto.metadata ? (signupDto.metadata as any) : undefined,
+        emailVerificationToken: verificationToken,
       },
     });
 
-    return this.generateToken(user.id, user.email);
+    await this.mailService.sendVerificationEmail(user.email, verificationToken);
+
+    return this.generateToken(user.id, user.email, user.metadata);
   }
 
   async login(loginDto: LoginDto): Promise<TokenEntity> {
@@ -51,7 +56,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.generateToken(user.id, user.email);
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Email not verified');
+    }
+
+    return this.generateToken(user.id, user.email, user.metadata);
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
@@ -105,8 +114,26 @@ export class AuthService {
     });
   }
 
-  private generateToken(userId: string, email: string): TokenEntity {
-    const payload = { email, sub: userId };
+  async verifyEmail(token: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerificationToken: null,
+      },
+    });
+  }
+
+  private generateToken(userId: string, email: string, metadata?: any): TokenEntity {
+    const payload = { email, sub: userId, metadata };
     return {
       accessToken: this.jwtService.sign(payload),
     };

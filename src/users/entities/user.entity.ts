@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 
 export class UserEntity implements User {
   @ApiProperty({ description: 'The unique identifier of the user' })
@@ -19,6 +19,15 @@ export class UserEntity implements User {
 
   @ApiProperty({ description: 'Reset password expiry', required: false, nullable: true })
   resetPasswordExpires: Date | null;
+
+  @ApiProperty({ description: 'User metadata in JSON format', required: false, nullable: true })
+  metadata: Prisma.JsonValue | null;
+
+  @ApiProperty({ description: 'Whether the user email is verified' })
+  isEmailVerified: boolean;
+
+  @ApiProperty({ description: 'Email verification token', required: false, nullable: true })
+  emailVerificationToken: string | null;
 
   @ApiProperty({ description: 'The creation date of the record' })
   createdAt: Date;

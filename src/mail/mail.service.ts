@@ -71,4 +71,44 @@ export class MailService {
       throw error;
     }
   }
+
+  async sendVerificationEmail(to: string, token: string) {
+    const baseUrl =
+      process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    const verifyUrl =
+      `${baseUrl}/auth/verify-email?token=${token}`;
+
+    const mailOptions = {
+      from:
+        process.env.SMTP_FROM ||
+        '"Auth-Pro" <noreply@example.com>',
+      to,
+      subject: 'Verify Your Email',
+      text:
+        `Welcome to Auth-Pro!\n\n` +
+        `Please click the following link to verify your email:\n\n` +
+        `${verifyUrl}`,
+      html: `
+      <p>Welcome to Auth-Pro!</p>
+      <p>
+        Please click the following link to verify your email:
+      </p>
+      <p>
+        <a href="${verifyUrl}">
+          Verify Email
+        </a>
+      </p>
+      <p>${verifyUrl}</p>
+    `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Verification email sent to ${to}`);
+    } catch (error) {
+      this.logger.error(`Error sending verification email to ${to}`, error);
+      throw error;
+    }
+  }
 }
