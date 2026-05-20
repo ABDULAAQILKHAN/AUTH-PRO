@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class MailService {
@@ -25,6 +27,17 @@ export class MailService {
     const resetUrl =
       `${baseUrl}/auth/reset-password?token=${token}`;
 
+    const templatePath = path.join(__dirname, '..', 'assets', 'email-templates', 'reset-password.html');
+    let htmlTemplate = '';
+    try {
+      htmlTemplate = await fs.readFile(templatePath, 'utf-8');
+      htmlTemplate = htmlTemplate.replace(/\{\{resetUrl\}\}/g, resetUrl);
+    } catch (err) {
+      this.logger.error('Error reading reset-password.html template', err);
+      // Fallback HTML
+      htmlTemplate = `<p>Click here to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`;
+    }
+
     const mailOptions = {
       from:
         process.env.SMTP_FROM ||
@@ -39,21 +52,7 @@ export class MailService {
         `Click the following link to reset your password:\n\n` +
         `${resetUrl}`,
 
-      html: `
-      <p>You requested a password reset.</p>
-
-      <p>
-        Click the following link to reset your password:
-      </p>
-
-      <p>
-        <a href="${resetUrl}">
-          Reset Password
-        </a>
-      </p>
-
-      <p>${resetUrl}</p>
-    `,
+      html: htmlTemplate,
     };
 
     try {
@@ -79,6 +78,17 @@ export class MailService {
     const verifyUrl =
       `${baseUrl}/auth/verify-email?token=${token}`;
 
+    const templatePath = path.join(__dirname, '..', 'assets', 'email-templates', 'verify-email.html');
+    let htmlTemplate = '';
+    try {
+      htmlTemplate = await fs.readFile(templatePath, 'utf-8');
+      htmlTemplate = htmlTemplate.replace(/\{\{verifyUrl\}\}/g, verifyUrl);
+    } catch (err) {
+      this.logger.error('Error reading verify-email.html template', err);
+      // Fallback HTML
+      htmlTemplate = `<p>Click here to verify your email: <a href="${verifyUrl}">${verifyUrl}</a></p>`;
+    }
+
     const mailOptions = {
       from:
         process.env.SMTP_FROM ||
@@ -89,18 +99,7 @@ export class MailService {
         `Welcome to Auth-Pro!\n\n` +
         `Please click the following link to verify your email:\n\n` +
         `${verifyUrl}`,
-      html: `
-      <p>Welcome to Auth-Pro!</p>
-      <p>
-        Please click the following link to verify your email:
-      </p>
-      <p>
-        <a href="${verifyUrl}">
-          Verify Email
-        </a>
-      </p>
-      <p>${verifyUrl}</p>
-    `,
+      html: htmlTemplate,
     };
 
     try {
