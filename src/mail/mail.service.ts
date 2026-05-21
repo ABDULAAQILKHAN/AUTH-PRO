@@ -20,12 +20,12 @@ export class MailService {
     });
   }
 
-  async sendPasswordResetEmail(to: string, token: string) {
+  async sendPasswordResetEmail(to: string, token: string, redirectUrl: string) {
     const baseUrl =
-      process.env.FRONTEND_URL || 'http://localhost:3000';
+      process.env.API_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 
     const resetUrl =
-      `${baseUrl}/auth/reset-password?token=${token}`;
+      `${baseUrl}/auth/reset-password?token=${token}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
 
     const templatePath = path.join(__dirname, '..', 'assets', 'email-templates', 'reset-password.html');
     let htmlTemplate = '';
@@ -71,12 +71,12 @@ export class MailService {
     }
   }
 
-  async sendVerificationEmail(to: string, token: string) {
+  async sendVerificationEmail(to: string, token: string, redirectUrl: string) {
     const baseUrl =
-      process.env.FRONTEND_URL || 'http://localhost:3000';
+      process.env.API_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 
     const verifyUrl =
-      `${baseUrl}/auth/verify-email?token=${token}`;
+      `${baseUrl}/auth/verify-email?token=${token}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
 
     const templatePath = path.join(__dirname, '..', 'assets', 'email-templates', 'verify-email.html');
     let htmlTemplate = '';

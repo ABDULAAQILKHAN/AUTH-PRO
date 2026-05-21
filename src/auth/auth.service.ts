@@ -36,7 +36,7 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendVerificationEmail(user.email, verificationToken);
+    await this.mailService.sendVerificationEmail(user.email, verificationToken, signupDto.redirectUrl);
 
     return this.generateToken(user.id, user.email, user.metadata);
   }
@@ -85,7 +85,7 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendPasswordResetEmail(user.email, token);
+    await this.mailService.sendPasswordResetEmail(user.email, token, forgotPasswordDto.redirectUrl);
   }
 
   async updatePassword(updatePasswordDto: UpdatePasswordDto): Promise<void> {

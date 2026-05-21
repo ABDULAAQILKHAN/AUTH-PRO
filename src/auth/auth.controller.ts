@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Query, Body, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto, ForgotPasswordDto, UpdatePasswordDto, TokenEntity } from './dto/auth.dto';
@@ -47,9 +48,37 @@ export class AuthController {
   @Get('verify-email')
   @ApiOperation({ summary: 'Verify user email address' })
   @ApiResponse({ status: 200, description: 'Email successfully verified.' })
+  @ApiResponse({ status: 302, description: 'Redirects to redirectUrl if provided.' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token.' })
-  async verifyEmail(@Query('token') token: string): Promise<{ message: string }> {
+  async verifyEmail(
+    @Query('token') token: string,
+    @Query('redirectUrl') redirectUrl: string,
+    @Res() res: Response
+  ) {
     await this.authService.verifyEmail(token);
-    return { message: 'Email successfully verified.' };
+    if (redirectUrl) {
+      return res.redirect(redirectUrl);
+    }
+    return res.json({ message: 'Email successfully verified.' });
+  }
+
+  @Get('reset-password')
+  @ApiOperation({ summary: 'Redirect to password reset page' })
+  @ApiResponse({ status: 302, description: 'Redirects to redirectUrl with token.' })
+  async resetPasswordRedirect(
+    @Query('token') token: string,
+    @Query('redirectUrl') redirectUrl: string,
+    @Res() res: Response
+  ) {
+    if (redirectUrl) {
+      try {
+        const url = new URL(redirectUrl);
+        url.searchParams.append('token', token);
+        return res.redirect(url.toString());
+      } catch (e) {
+        return res.redirect(`${redirectUrl}?token=${token}`);
+      }
+    }
+    return res.json({ message: 'Please use this token to reset your password', token });
   }
 }

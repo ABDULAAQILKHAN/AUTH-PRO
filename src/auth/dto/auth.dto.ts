@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, MinLength, Matches, IsOptional, IsObject } from 'class-validator';
+import { IsEmail, IsNotEmpty, MinLength, Matches, IsOptional, IsObject, IsUrl } from 'class-validator';
 
 export class SignupDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -26,6 +26,11 @@ export class SignupDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, any>;
+
+  @ApiProperty({ example: 'https://myapp.com/login', description: 'URL to redirect after successful verification' })
+  @IsNotEmpty()
+  @IsUrl({ require_tld: false })
+  redirectUrl: string;
 }
 
 export class LoginDto {
@@ -42,6 +47,11 @@ export class ForgotPasswordDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   email: string;
+
+  @ApiProperty({ example: 'https://myapp.com/reset-password', description: 'URL to redirect for resetting password' })
+  @IsNotEmpty()
+  @IsUrl({ require_tld: false })
+  redirectUrl: string;
 }
 
 export class UpdatePasswordDto {
