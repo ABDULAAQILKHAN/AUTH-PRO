@@ -110,4 +110,23 @@ export class MailService {
       throw error;
     }
   }
+
+  async sendCustomEmail(to: string, subject: string, htmlTemplate: string) {
+    const mailOptions = {
+      from:
+        process.env.SMTP_FROM ||
+        '"Auth-Pro" <noreply@example.com>',
+      to,
+      subject,
+      html: htmlTemplate,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Custom email sent to ${to}`);
+    } catch (error) {
+      this.logger.error(`Error sending custom email to ${to}`, error);
+      throw error;
+    }
+  }
 }
