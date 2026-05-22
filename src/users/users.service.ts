@@ -35,4 +35,13 @@ export class UsersService {
     });
     return new UserEntity(updatedUser);
   }
+
+  async banUser(id: string): Promise<UserEntity> {
+    const user = await this.findById(id); // Ensures user exists
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { isEmailVerified: false },
+    });
+    return new UserEntity(updatedUser);
+  }
 }

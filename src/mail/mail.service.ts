@@ -32,6 +32,7 @@ export class MailService {
     try {
       htmlTemplate = await fs.readFile(templatePath, 'utf-8');
       htmlTemplate = htmlTemplate.replace(/\{\{resetUrl\}\}/g, resetUrl);
+      htmlTemplate = htmlTemplate.replace(/\{\{baseUrl\}\}/g, baseUrl);
     } catch (err) {
       this.logger.error('Error reading reset-password.html template', err);
       // Fallback HTML
@@ -83,6 +84,7 @@ export class MailService {
     try {
       htmlTemplate = await fs.readFile(templatePath, 'utf-8');
       htmlTemplate = htmlTemplate.replace(/\{\{verifyUrl\}\}/g, verifyUrl);
+      htmlTemplate = htmlTemplate.replace(/\{\{baseUrl\}\}/g, baseUrl);
     } catch (err) {
       this.logger.error('Error reading verify-email.html template', err);
       // Fallback HTML

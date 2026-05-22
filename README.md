@@ -1,4 +1,7 @@
-# Auth-Pro Microservice
+<div align="center">
+  <img src="./src/assets/icon.png" alt="Auth-Pro Icon" width="128" height="128" style="border-radius: 20%">
+  <h1>Auth-Pro Microservice</h1>
+</div>
 
 Auth-Pro is a personal authentication, email, and storage microservice designed to provide a robust foundation for modern web applications. It is built using **NestJS**, **Prisma**, and **PostgreSQL (Neon DB)**, incorporating best practices like strict Domain-Driven Module architecture.
 
@@ -75,9 +78,48 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## 🐳 Docker Deployment
+
+To build the Docker image and spin up the application inside a container, follow these steps:
+
+1. **Build the Docker Image:**
+   This will compile your application and package it into a lightweight Node image.
+   ```bash
+   docker build -t auth-pro .
+   ```
+
+2. **Run the Docker Container:**
+   Run the container on port 3000, passing the environment variables from your `.env` file.
+   ```bash
+   docker run -d -p 3000:3000 --env-file .env --name auth-pro-app auth-pro
+   ```
+   > [!NOTE]
+   > Make sure your `.env` variables point to accessible network resources. If using a local database on your host, you may need to use `host.docker.internal` in your `DATABASE_URL` instead of `localhost`.
+
+3. **Check Container Status:**
+   ```bash
+   docker logs auth-pro-app
+   ```
+
 ## 📚 API Documentation
 
-Once the server is running, navigate to the following URL to explore the API documentation via Swagger UI:
-
+Once the server is running, explore the API natively using our built-in UI:
+- **App Intro & Interactive Docs:** [http://localhost:3000/docs](http://localhost:3000/docs)
 - **Swagger UI:** [http://localhost:3000/api](http://localhost:3000/api)
-- **App Intro:** [http://localhost:3000/](http://localhost:3000/)
+
+### Authentication
+- `POST /auth/signup`: Registers a new user. Payload: `{ email, password, firstName, lastName, redirectUrl? }`
+- `POST /auth/login`: Authenticates a user and returns a JWT token. Payload: `{ email, password }`
+- `POST /auth/forgot-password`: Requests a password reset email. Payload: `{ email, redirectUrl? }`
+- `POST /auth/update-password`: Resets a password using a token. Payload: `{ token, newPassword }`
+- `GET /auth/verify-email`: Verifies a user's email via query `token` and redirects to `redirectUrl`.
+- `GET /auth/reset-password`: Formats reset password redirect to frontend.
+
+### User Management
+- `GET /users/me`: Gets the profile of the currently authenticated user. Header: `Authorization: Bearer <token>`
+- `PATCH /users/me`: Updates metadata for the currently authenticated user. Payload: `{ metadata }`
+- `POST /users/avatar`: Uploads a profile avatar to Cloudflare R2/S3. Payload: form-data `file`
+- `POST /users/ban`: Bans a user (Admin). Payload: `{ adminPass, userId }`
+
+### Mailing Services
+- `POST /mail/send-custom`: Sends a custom HTML email (Admin). Payload: `{ adminPass, to, subject, htmlTemplate }`
