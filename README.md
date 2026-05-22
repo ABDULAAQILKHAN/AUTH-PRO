@@ -44,6 +44,26 @@ CREATE TABLE "User" (
 
 -- Ensure that emails are unique
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- Create the Media table
+CREATE TABLE "Media" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "filename" TEXT NOT NULL,
+    "mimeType" TEXT NOT NULL,
+    "size" INTEGER NOT NULL,
+    "tag" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Media_pkey" PRIMARY KEY ("id")
+);
+
+-- Add Foreign Key constraint
+ALTER TABLE "Media" ADD CONSTRAINT "Media_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ```
 
 ## ⚙️ Setup and Installation
@@ -51,6 +71,8 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 1. **Install Dependencies:**
    ```bash
    npm install
+   npm install sharp
+   npm install -D @types/sharp
    ```
 
 2. **Configure Environment Variables:**
@@ -123,3 +145,12 @@ Once the server is running, explore the API natively using our built-in UI:
 
 ### Mailing Services
 - `POST /mail/send-custom`: Sends a custom HTML email (Admin). Payload: `{ adminPass, to, subject, htmlTemplate }`
+
+### Media Upload
+- `POST /media/images`: Uploads an image, compresses it to WebP natively using `sharp`, and saves it to cloud storage. Payload: `multipart/form-data` with `file` and `tag`. Header: `Authorization: Bearer <token>`
+- `GET /media`: Lists all media files uploaded by the current user. Accepts optional `?tag=` query to filter.
+- `GET /media/:id`: Retrieves detailed metadata for a specific media file.
+- `DELETE /media/:id`: Deletes a specific media file from cloud storage and the database.
+
+**Media Flow Explained:**
+When a user calls `POST /media/images`, the server receives the file via a multipart form data payload. The backend extracts the file buffer and immediately pipes it into `sharp` to resize its maximum width to 1920px and convert it to a highly-compressed WebP format. This severely reduces bandwidth usage and storage costs. Next, the compressed buffer is directly uploaded to Cloudflare R2 (S3) via the `@aws-sdk/client-s3` library. A database record is then inserted into the `Media` table containing the R2 public URL, user details, and the mandatory categorizing `tag`. Finally, the client receives the media's metadata and URL for immediate use.

@@ -137,6 +137,22 @@ Available Endpoints:
    - Payload: { adminPass, to, subject, htmlTemplate }
    - Behavior: Sends a custom HTML email to a specific user.
 
+12. POST /media/images
+   - Payload: multipart/form-data with 'file' and 'tag' fields (plus Bearer token)
+   - Behavior: Uploads, compresses (to WebP), and saves an image, returning the URL.
+
+13. GET /media
+   - Payload: Bearer token (optional ?tag= query)
+   - Behavior: Returns a list of uploaded media files.
+
+14. GET /media/:id
+   - Payload: Bearer token
+   - Behavior: Returns metadata for a specific media file.
+
+15. DELETE /media/:id
+   - Payload: Bearer token
+   - Behavior: Deletes the specified media file.
+
 How to utilize:
 - Create a signup form sending data to POST /auth/signup. If using a frontend framework, pass \`redirectUrl\` so the verification email links back to your app.
 - Create a login form sending data to POST /auth/login. Store the returned JWT token securely (e.g., localStorage).
@@ -317,6 +333,44 @@ How to utilize:
                           Payload: { "adminPass": "your-secret", "to": "user@ex.com", "subject": "Hello", "htmlTemplate": "&lt;h1&gt;Hi&lt;/h1&gt;" }
                       </div>
                       <p class="text-sm text-slate-400"><strong>How to use:</strong> Create a back-office tool to send announcements or personalized notifications.</p>
+                  </div>
+
+                  <!-- API Block: Media Upload -->
+                  <div class="glass p-6 rounded-xl border-l-4 border-l-yellow-500 md:col-span-2">
+                      <div class="flex items-center gap-4 mb-4">
+                          <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded font-mono text-sm font-bold">POST</span>
+                          <h2 class="text-xl font-semibold font-mono">/media/images</h2>
+                      </div>
+                      <p class="text-slate-300 mb-4">Uploads an image, natively compresses it to WebP, and saves it to cloud storage.</p>
+                      <div class="bg-slate-900 rounded p-4 font-mono text-sm text-slate-300 mb-4 overflow-x-auto">
+                          Payload: multipart/form-data (fields: 'file', 'tag')<br>
+                          Headers: { "Authorization": "Bearer jwt-token..." }
+                      </div>
+                      <p class="text-sm text-slate-400"><strong>How to use:</strong> Easily attach images to records using a unified tag (like 'project-x') to filter later.</p>
+                  </div>
+
+                  <!-- API Block: Get Media -->
+                  <div class="glass p-6 rounded-xl border-l-4 border-l-yellow-500">
+                      <div class="flex items-center gap-4 mb-4">
+                          <span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded font-mono text-sm font-bold">GET</span>
+                          <h2 class="text-xl font-semibold font-mono">/media</h2>
+                      </div>
+                      <p class="text-slate-300 mb-4">Returns a list of your uploaded media. Use ?tag= query to filter.</p>
+                      <div class="bg-slate-900 rounded p-4 font-mono text-sm text-slate-300 mb-4 overflow-x-auto">
+                          Headers: { "Authorization": "Bearer jwt-token..." }
+                      </div>
+                  </div>
+
+                  <!-- API Block: Delete Media -->
+                  <div class="glass p-6 rounded-xl border-l-4 border-l-yellow-500">
+                      <div class="flex items-center gap-4 mb-4">
+                          <span class="bg-red-500/20 text-red-400 px-3 py-1 rounded font-mono text-sm font-bold">DELETE</span>
+                          <h2 class="text-xl font-semibold font-mono">/media/:id</h2>
+                      </div>
+                      <p class="text-slate-300 mb-4">Deletes a specific media file from cloud storage and database.</p>
+                      <div class="bg-slate-900 rounded p-4 font-mono text-sm text-slate-300 mb-4 overflow-x-auto">
+                          Headers: { "Authorization": "Bearer jwt-token..." }
+                      </div>
                   </div>
 
               </div>

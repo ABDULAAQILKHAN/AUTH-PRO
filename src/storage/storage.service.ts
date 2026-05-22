@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 
@@ -39,6 +39,41 @@ export class StorageService {
       return publicUrl;
     } catch (error) {
       this.logger.error('Error uploading file to R2', error);
+      throw error;
+    }
+  }
+
+  async uploadMedia(buffer: Buffer, mimetype: string, extension: string, folder: string, userId: string): Promise<{ publicUrl: string; filename: string; size: number }> {
+    const filename = `${folder}/${userId}/${uuidv4()}${extension}`;
+    const size = buffer.length;
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: filename,
+      Body: buffer,
+      ContentType: mimetype,
+    });
+
+    try {
+      await this.s3Client.send(command);
+      const publicUrl = `${process.env.R2_PUBLIC_URL}/${filename}`;
+      return { publicUrl, filename, size };
+    } catch (error) {
+      this.logger.error('Error uploading media to R2', error);
+      throw error;
+    }
+  }
+
+  async deleteFile(filename: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: filename,
+    });
+
+    try {
+      await this.s3Client.send(command);
+    } catch (error) {
+      this.logger.error(`Error deleting file ${filename} from R2`, error);
       throw error;
     }
   }

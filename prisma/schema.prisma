@@ -18,6 +18,22 @@ model User {
   metadata               Json?
   isEmailVerified        Boolean   @default(false)
   emailVerificationToken String?
+  media                  Media[]
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  userId    String
+  email     String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  type      String   // 'image', 'video', etc.
+  filename  String
+  mimeType  String
+  size      Int
+  tag       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
