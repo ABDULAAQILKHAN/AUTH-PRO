@@ -29,9 +29,17 @@ export class UsersService {
   }
 
   async updateMetadata(id: string, metadata: Record<string, any>): Promise<UserEntity> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const mergedMetadata = {
+      ...(user.metadata as Record<string, any> || {}),
+      ...metadata
+    };
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: { metadata: metadata as any },
+      data: { metadata: mergedMetadata },
     });
     return new UserEntity(updatedUser);
   }
