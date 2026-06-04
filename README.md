@@ -15,7 +15,8 @@ Auth-Pro is a robust, production-ready authentication, email, and storage micros
 - **Storage Integrations:** Image and avatar uploads are processed natively (via `sharp`) and uploaded to Cloudflare R2 using `@aws-sdk/client-s3`.
 - **Database Architecture:** Built on top of Prisma ORM connected to Neon DB (Serverless PostgreSQL).
 - **Email Delivery:** Seamlessly configured with `nodemailer` for automated email workflows.
-- **Comprehensive Testing:** 110+ Unit and End-to-End (E2E) tests ensuring robust operations with mocked Prisma, Storage, and Mail services.
+- **Security Hardening:** HTTP security headers via `helmet`, three-tier global rate limiting via `@nestjs/throttler`, per-endpoint throttle overrides, and a 1 MB JSON payload cap.
+- **Comprehensive Testing:** 130+ Unit and End-to-End (E2E) tests ensuring robust operations with mocked Prisma, Storage, and Mail services — including a dedicated security test suite.
 - **Interactive Documentation:** Custom built-in API portal with Swagger UI integration.
 
 ## 🛠️ Technology Stack
@@ -24,6 +25,7 @@ Auth-Pro is a robust, production-ready authentication, email, and storage micros
 - **Database:** PostgreSQL (Neon DB)
 - **ORM:** Prisma
 - **Auth:** `@nestjs/jwt`, `passport`, `bcrypt`
+- **Security:** `helmet`, `@nestjs/throttler`
 - **Storage:** AWS S3 SDK (`@aws-sdk/client-s3`) connected to Cloudflare R2
 - **Image Processing:** `sharp`
 - **Mailing:** `nodemailer`
@@ -107,6 +109,51 @@ CREATE TABLE "Media" (
 ALTER TABLE "Media" ADD CONSTRAINT "Media_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ```
 
+## 🔒 Security Hardening
+
+Auth-Pro ships with several production-grade security layers enabled by default.
+
+### HTTP Security Headers (helmet)
+
+Every response includes the following headers, set automatically by `helmet`:
+
+| Header | Value | Purpose |
+|---|---|---|
+| `X-Frame-Options` | `SAMEORIGIN` | Prevents clickjacking |
+| `X-Content-Type-Options` | `nosniff` | Blocks MIME-type sniffing |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Enforces HTTPS |
+| `Content-Security-Policy` | (strict default) | Mitigates XSS |
+| `Referrer-Policy` | `no-referrer` | Controls referrer leakage |
+| `X-Powered-By` | *(removed)* | Hides tech fingerprint |
+
+### Rate Limiting (ThrottlerModule)
+
+Three global tiers apply to every endpoint simultaneously. A request is only allowed through if it passes **all** tiers. Any one tier can issue a `429 Too Many Requests`.
+
+| Tier | Window | Limit | Purpose |
+|---|---|---|---|
+| `short` | 1 second | 5 requests | Burst / brute-force protection |
+| `default` | 60 seconds | 60 requests | Per-minute traffic cap |
+| `long` | 1 hour | 500 requests | Hourly abuse cap |
+
+#### Per-Endpoint Overrides
+
+Sensitive endpoints override the `default` tier with tighter limits:
+
+| Endpoint | Limit | Reason |
+|---|---|---|
+| `POST /auth/login` | 5 req / min | Brute-force credential guessing |
+| `POST /auth/signup` | 3 req / hr | Bulk account creation |
+| `POST /auth/forgot-password` | 3 req / hr | Email flooding |
+| `POST /users/ban` | 5 req / min | Admin credential guessing |
+| `POST /mail/send-custom` | 10 req / hr | SMTP abuse |
+
+### Additional Protections
+
+- **JSON payload cap:** `express.json({ limit: '1mb' })` — oversized bodies are rejected with `413 Payload Too Large` before they reach any controller. Multer file uploads are unaffected (they bypass the JSON parser entirely).
+- **Input validation:** `ValidationPipe` with `whitelist: true` and `forbidNonWhitelisted: true` — unknown fields in any request body return `400 Bad Request` immediately.
+- **Proxy trust:** `app.set('trust proxy', 1)` ensures the real client IP is read from `X-Forwarded-For` when running behind an ingress or load balancer, so rate limiting correctly tracks unique clients rather than the proxy IP.
+
 ## 🏃 Running the Application
 
 ```bash
@@ -123,18 +170,86 @@ npm run start:prod
 
 ## 🧪 Testing
 
-Auth-Pro comes with a comprehensive suite of Unit and End-to-End (E2E) tests. All external services (Prisma Database, Cloudflare R2, Nodemailer) are heavily mocked, meaning you can run the entire test suite completely isolated without needing a real database, AWS keys, or SMTP server.
+Auth-Pro ships with **130+ tests** across three layers. All external services (Prisma, Cloudflare R2, Nodemailer) are mocked — no real database, storage, or SMTP server is needed to run the full suite.
 
 ```bash
 # Run all unit tests (Controllers and Services)
 npm run test
 
-# Run all E2E tests (HTTP layer validation)
+# Run all E2E tests (HTTP layer + security)
 npm run test:e2e
 
-# Generate Test Coverage Report
+# Generate a coverage report
 npm run test:cov
 ```
+
+### Test Suites
+
+#### Unit Tests (`src/**/*.spec.ts`)
+
+Controller and service logic is tested in isolation with Jest mocks.
+
+| File | What is tested |
+|---|---|
+| `auth.controller.spec.ts` | signup, login, forgot-password, update-password, verify-email, reset-password redirect |
+| `auth.service.spec.ts` | JWT signing, bcrypt comparison, token generation, email enumeration protection |
+| `users.controller.spec.ts` | getProfile, updateProfile, uploadAvatar, banUser (admin password check) |
+| `users.service.spec.ts` | findById, updateAvatar, metadata deep-merge, banUser |
+| `mail.controller.spec.ts` | sendCustomEmail (admin auth, SMTP propagation) |
+| `mail.service.spec.ts` | sendVerificationEmail, sendPasswordResetEmail, sendCustomEmail |
+| `media.controller.spec.ts` | image upload, list, get by id, delete (ownership enforcement) |
+| `media.service.spec.ts` | storage upload, DB record creation, access control |
+
+#### E2E Tests (`test/app.e2e-spec.ts`)
+
+Full HTTP round-trips through the real NestJS request pipeline with mocked external providers.
+
+| Endpoint group | Scenarios covered |
+|---|---|
+| `GET /` and `GET /docs` | HTML pages render correctly |
+| `POST /auth/signup` | 201 success, 400 weak password, 400 duplicate email, 400 missing field |
+| `POST /auth/login` | 200 success, 401 wrong password, 401 unknown user, 401 banned user |
+| `POST /auth/forgot-password` | 200 always (enumeration-safe), reset email sent |
+| `POST /auth/update-password` | 200 valid token, 400 expired token |
+| `GET /users/me` | 200 with profile, 401 no token |
+| `PATCH /users/me` | 200 metadata update, 401 no token |
+| `POST /users/avatar` | 201 upload success, 401 no token |
+| `POST /users/ban` | 200 ban success, 401 wrong admin pass |
+| `POST /mail/send-custom` | 200 success, 401 wrong admin pass |
+| `POST /media/images` | 201 upload, 401 no token |
+| `GET /media` | 200 list, tag filter, empty array, 401 no token |
+| `GET /media/:id` | 200 owned file, 404 other user's file, 401 no token |
+| `DELETE /media/:id` | 200 owned delete, 404 other user's file, 401 no token |
+
+#### Security E2E Tests (`test/security.e2e-spec.ts`)
+
+Validates the security hardening layer end-to-end against a fully booted app with all middleware active.
+
+**HTTP Headers & Input Hardening:**
+
+| Test | Asserts |
+|---|---|
+| `X-Frame-Options: SAMEORIGIN` | helmet header present |
+| `X-Content-Type-Options: nosniff` | helmet header present |
+| `Strict-Transport-Security` | HSTS header with `max-age` present |
+| `Content-Security-Policy` | CSP header present |
+| `Referrer-Policy` | header present |
+| `X-DNS-Prefetch-Control: off` | header present |
+| No `X-Powered-By` | tech fingerprint removed |
+| Unknown field in body → `400` | `forbidNonWhitelisted` on login, signup, ban, send-custom |
+| Missing required field → `400` | `ValidationPipe` enforcement |
+| Weak password → `400` | DTO password-strength validator |
+| Body > 1 MB → `413` | `express.json({ limit: '1mb' })` middleware |
+
+**Rate Limiting:**
+
+| Endpoint | Limit tested | How |
+|---|---|---|
+| `POST /auth/login` | 5 req / min | 5 requests → not 429, 6th → 429 |
+| `POST /auth/signup` | 3 req / hr | 3 requests → not 429, 4th → 429 |
+| `POST /auth/forgot-password` | 3 req / hr | 3 requests → not 429, 4th → 429 |
+| `POST /users/ban` | 5 req / min | 5 requests → not 429, 6th → 429 |
+| `POST /mail/send-custom` | 10 req / hr | 10 requests in 2 batches (with 1.1 s gap to reset the 5 req/sec burst tier), 11th → 429 |
 
 ## 🐳 Docker Deployment
 
