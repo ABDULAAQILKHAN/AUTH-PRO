@@ -17,7 +17,7 @@ export class SignupDto {
   @ApiProperty({
     required: false,
     example: {
-      name: 'John Doe',
+      name: 'Aaqil khan',
       phone: '+1234567890',
       additionalEmail: 'john@example.com',
       address: '123 Main St'

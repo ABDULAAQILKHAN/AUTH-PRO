@@ -35,7 +35,7 @@ const endpoints = [
   "password": "MyP@ssword1",              // required — min 8 chars, uppercase, lowercase, number & special char (@$!%*?&)
   "redirectUrl": "https://yourapp.com/dashboard", // required — your frontend page after email verification
   "metadata": {                           // optional — any custom JSON data to attach to the user
-    "name": "John Doe",
+    "name": "Aaqil khan",
     "phone": "+1234567890",
     "plan": "free"
   }
@@ -52,7 +52,7 @@ until the user clicks the link.`,
     email: 'user@example.com',
     password: 'MyP@ssword1',
     redirectUrl: 'https://yourapp.com/dashboard',
-    metadata: { name: 'John Doe', plan: 'free' }
+    metadata: { name: 'Aaqil khan', plan: 'free' }
   })
 })
 .then(res => res.json())
@@ -550,7 +550,7 @@ async function deleteMedia(mediaId) {
 console.log('Auth-Pro API — All Endpoints:\n');
 endpoints.forEach((ep, i) => {
   const badges = [
-    ep.auth  ? '[Auth]'  : '',
+    ep.auth ? '[Auth]' : '',
     ep.admin ? '[Admin]' : '',
   ].filter(Boolean).join(' ');
   console.log(`  ${String(i + 1).padStart(2, ' ')}. ${ep.method.padEnd(7)} ${ep.path.padEnd(48)} ${badges}`);

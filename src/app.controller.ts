@@ -247,7 +247,7 @@ Admin authentication: endpoints /users/ban and /mail/send-custom use adminPass (
   "redirectUrl": "https://yourapp.com/dashboard", // required — your frontend page the user
                                           //   lands on AFTER clicking the verification email link
   "metadata": {                           // optional — any custom JSON data to attach to the user
-    "name": "John Doe",
+    "name": "Aaqil khan",
     "phone": "+1234567890",
     "plan": "free",
     "referralCode": "ABC123"
@@ -266,7 +266,7 @@ The response returns an <code>accessToken</code> (JWT) immediately, so the user 
     password: 'MyP@ssword1',
     redirectUrl: 'https://yourapp.com/dashboard',
     metadata: {
-      name: 'John Doe',
+      name: 'Aaqil khan',
       plan: 'free'
     }
   })
@@ -511,7 +511,7 @@ const token = new URLSearchParams(window.location.search).get('token');
   "email": "user@example.com",
   "avatarUrl": "https://cdn.example.com/avatars/abc.webp", // null if not set
   "metadata": {                                              // null if not set
-    "name": "John Doe",
+    "name": "Aaqil khan",
     "plan": "pro"
   },
   "isEmailVerified": true,
@@ -1011,15 +1011,15 @@ document.querySelectorAll('.delete-media-btn').forEach(btn => {
     ];
 
     const methodBadge: Record<string, string> = {
-      POST:   'text-green-300 bg-green-500/20 border-green-500/40',
-      GET:    'text-sky-300 bg-sky-500/20 border-sky-500/40',
-      PATCH:  'text-orange-300 bg-orange-500/20 border-orange-500/40',
+      POST: 'text-green-300 bg-green-500/20 border-green-500/40',
+      GET: 'text-sky-300 bg-sky-500/20 border-sky-500/40',
+      PATCH: 'text-orange-300 bg-orange-500/20 border-orange-500/40',
       DELETE: 'text-red-300 bg-red-500/20 border-red-500/40',
     };
     const borderLeft: Record<string, string> = {
-      POST:   'border-l-green-500',
-      GET:    'border-l-sky-500',
-      PATCH:  'border-l-orange-500',
+      POST: 'border-l-green-500',
+      GET: 'border-l-sky-500',
+      PATCH: 'border-l-orange-500',
       DELETE: 'border-l-red-500',
     };
 
