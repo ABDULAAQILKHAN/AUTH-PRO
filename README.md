@@ -122,7 +122,7 @@ Every response includes the following headers, set automatically by `helmet`:
 | `X-Frame-Options` | `SAMEORIGIN` | Prevents clickjacking |
 | `X-Content-Type-Options` | `nosniff` | Blocks MIME-type sniffing |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Enforces HTTPS |
-| `Content-Security-Policy` | (strict default) | Mitigates XSS |
+| `Content-Security-Policy` | custom (allows Tailwind CDN + Google Fonts; blocks everything else) | Mitigates XSS |
 | `Referrer-Policy` | `no-referrer` | Controls referrer leakage |
 | `X-Powered-By` | *(removed)* | Hides tech fingerprint |
 

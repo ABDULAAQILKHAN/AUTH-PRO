@@ -96,7 +96,22 @@ async function buildApp(
 
   const app = moduleFixture.createNestApplication<NestExpressApplication>();
   app.set('trust proxy', 1);
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc:     ["'self'"],
+        scriptSrc:      ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+        styleSrc:       ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc:        ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc:         ["'self'", 'data:', 'https:'],
+        connectSrc:     ["'self'"],
+        objectSrc:      ["'none'"],
+        frameAncestors: ["'self'"],
+        baseUri:        ["'self'"],
+        formAction:     ["'self'"],
+      },
+    },
+  }));
   app.use(json({ limit: '1mb' }));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   await app.init();
@@ -138,8 +153,12 @@ describe('Security — HTTP Headers & Input Hardening', () => {
       expect(headers['strict-transport-security']).toContain('max-age=');
     });
 
-    it('sets Content-Security-Policy header', () => {
-      expect(headers['content-security-policy']).toBeDefined();
+    it('sets Content-Security-Policy header allowing Tailwind CDN and Google Fonts', () => {
+      const csp = headers['content-security-policy'];
+      expect(csp).toBeDefined();
+      expect(csp).toContain('cdn.tailwindcss.com');
+      expect(csp).toContain('fonts.googleapis.com');
+      expect(csp).toContain("object-src 'none'");
     });
 
     it('sets Referrer-Policy header', () => {

@@ -12,8 +12,26 @@ async function bootstrap() {
   // Trust the first proxy hop (required for correct IP behind ingress/load balancer)
   app.set('trust proxy', 1);
 
-  // Standard HTTP security headers (CSP, HSTS, X-Frame-Options, etc.)
-  app.use(helmet());
+  // Standard HTTP security headers.
+  // CSP is customised to allow the Tailwind CDN script and Google Fonts used
+  // by the built-in landing page and docs page while keeping all other
+  // directives at helmet's secure defaults.
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc:    ["'self'"],
+        scriptSrc:     ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+        styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc:       ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc:        ["'self'", 'data:', 'https:'],
+        connectSrc:    ["'self'"],
+        objectSrc:     ["'none'"],
+        frameAncestors: ["'self'"],
+        baseUri:       ["'self'"],
+        formAction:    ["'self'"],
+      },
+    },
+  }));
 
   app.enableCors();
 
