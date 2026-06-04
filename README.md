@@ -1,6 +1,9 @@
 <div align="center">
   <img src="./src/assets/icon.png" alt="Auth-Pro Icon" width="128" height="128" style="border-radius: 20%">
   <h1>Auth-Pro Microservice</h1>
+  <p><b>Created by Aaqil Khan</b><br>
+  💼 B2B Solutions: <a href="https://solutions-with-aaqil.vercel.app/">https://solutions-with-aaqil.vercel.app/</a><br>
+  🌐 Personal Portfolio: <a href="https://aaqilcodes.vercel.app/">https://aaqilcodes.vercel.app/</a></p>
 </div>
 
 Auth-Pro is a robust, production-ready authentication, email, and storage microservice designed to provide a solid foundation for modern web applications. Built using **NestJS**, **Prisma**, and **PostgreSQL (Neon DB)**, it strictly adheres to Domain-Driven Module architecture.
@@ -41,10 +44,19 @@ Auth-Pro is a robust, production-ready authentication, email, and storage micros
    *(Note: `sharp` is used for image compression. Ensure you have the appropriate system dependencies if you face installation issues on certain operating systems.)*
 
 3. **Configure Environment Variables:**
-   Copy `.env.example` to `.env` and configure your database URL, JWT secret, Cloudflare R2, and SMTP credentials.
+   Copy `.env.example` to `.env` and configure your credentials.
    ```bash
    cp .env.example .env
    ```
+   
+   **Where to obtain your keys:**
+   - **`DATABASE_URL` & `DIRECT_URL`**: Obtain your connection strings from your [Neon DB](https://neon.tech/) project dashboard.
+   - **`JWT_SECRET`**: Generate a strong, random string (e.g., using `openssl rand -base64 32`).
+   - **`R2_*` keys**: Create a bucket in your [Cloudflare Dashboard](https://dash.cloudflare.com/) under R2, and generate an API token to get your access keys.
+   - **`SMTP_*` keys**: Use a transactional email provider (like Resend, SendGrid, or AWS SES) to get your SMTP host, port, user, and password.
+   - **`ADMIN_PASS`**: Choose a secure custom password. This acts as a master key for admin-only endpoints.
+   - **`PRODUCTION`**: Set this to `true` when deploying to a live server to enable production optimizations and security. Leave as `false` for local development.
+   - **`API_URL`**: The base URL where your API is hosted (e.g., `http://localhost:3000` locally, or `https://api.yourdomain.com` in production). This is required for constructing absolute URLs in email templates and redirects.
 
 4. **Initialize Database:**
    Generate the Prisma client and push the schema to your Neon DB (or local PostgreSQL).
