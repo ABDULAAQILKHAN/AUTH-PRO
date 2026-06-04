@@ -93,35 +93,137 @@ export class AppController {
   getDocs(@Res() res: Response) {
     const base = process.env.API_URL || 'http://localhost:3000';
 
-    const aiPrompt = `You are an expert AI coding assistant. The user wants to integrate Auth-Pro authentication into their frontend application.
-Base URL: ${base}
+    const aiPrompt = `You are an expert AI coding assistant helping the user integrate Auth-Pro into their frontend application.
 
-All Endpoints:
-— AUTH —
-1.  POST   /auth/signup           Body: { email, password, redirectUrl, metadata? }  → { accessToken }
-2.  POST   /auth/login            Body: { email, password }                           → { accessToken }
-3.  POST   /auth/forgot-password  Body: { email, redirectUrl }                        → { message }
-4.  POST   /auth/update-password  Body: { token, newPassword }                        → { message }
-5.  GET    /auth/verify-email     Query: token, redirectUrl   (user clicks from email, no code needed)
-6.  GET    /auth/reset-password   Query: token, redirectUrl   (user clicks from email, no code needed)
+BASE URL: ${base}
+All requests use JSON bodies unless noted as multipart/form-data.
+Protected routes require the header:  Authorization: Bearer <accessToken>
 
-— USERS —
-7.  GET    /users/me              Header: Authorization Bearer <token>                → UserEntity
-8.  PATCH  /users/me              Header: Authorization Bearer <token>  Body: { metadata: {} }  → UserEntity
-9.  POST   /users/avatar          Header: Authorization Bearer <token>  Body: multipart/form-data field "file" → UserEntity
-10. POST   /users/ban             Body: { adminPass, userId }  (Admin — no JWT needed) → UserEntity
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUTH ENDPOINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-— MAIL —
-11. POST   /mail/send-custom      Body: { adminPass, to, subject, htmlTemplate }  (Admin) → { message }
+1. POST /auth/signup
+   Body: {
+     email: string,           // required
+     password: string,        // required — min 8 chars, must include uppercase, lowercase, number & special char (@$!%*?&)
+     redirectUrl: string,     // required — your frontend page user lands on after clicking the verification email (no token appended)
+     metadata?: object        // optional — any JSON data to attach to the user (name, phone, plan, etc.)
+   }
+   Response: { accessToken: string }
+   Notes: User is immediately logged in via the returned token. Email is NOT verified yet.
+          The verification email link points to GET /auth/verify-email which then redirects to your redirectUrl.
 
-— MEDIA —
-12. POST   /media/images          Header: Authorization Bearer <token>  Body: multipart fields: "file" + "tag" → MediaEntity
-13. GET    /media                 Header: Authorization Bearer <token>  Query: ?tag= (optional) → MediaEntity[]
-14. GET    /media/:id             Header: Authorization Bearer <token>  → MediaEntity
-15. DELETE /media/:id             Header: Authorization Bearer <token>  → { message }
+2. POST /auth/login
+   Body: { email: string, password: string }
+   Response: { accessToken: string }
+   Notes: Store the token in localStorage. Use it for all protected requests.
+          Returns 401 if credentials are wrong or user is banned.
 
-Password rules: min 8 chars, must include uppercase, lowercase, number, and special character (@$!%*?&).
-metadata is a free-form JSON object — store anything (name, phone, plan, preferences, etc.). Updates are deep-merged, not replaced.
+3. POST /auth/forgot-password
+   Body: { email: string, redirectUrl: string }
+   Response: { message: string }
+   Notes: Sends a reset email. The link in the email hits GET /auth/reset-password which redirects to
+          YOUR redirectUrl with ?token=TOKEN appended. Then call POST /auth/update-password.
+          Response is always the same message regardless of whether email exists (prevents enumeration).
+
+4. POST /auth/update-password
+   Body: { token: string, newPassword: string }
+   Response: { message: string }
+   Notes: Use on your reset-password page. Extract token from URL:
+            const token = new URLSearchParams(window.location.search).get('token');
+          Tokens are single-use and expire. Returns 400 for invalid/expired tokens.
+
+5. GET /auth/verify-email?token=TOKEN&redirectUrl=URL
+   Notes: NOT called in code — the user clicks this link from their inbox.
+          Auth-Pro marks email as verified then redirects to your redirectUrl.
+
+6. GET /auth/reset-password?token=TOKEN&redirectUrl=URL
+   Notes: NOT called in code — the user clicks this from the forgot-password email.
+          Auth-Pro appends the token to your redirectUrl and redirects.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USER ENDPOINTS  (require Authorization: Bearer <token>)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7. GET /users/me
+   Response: { id, email, avatarUrl, metadata, isEmailVerified, createdAt, updatedAt }
+   Notes: password is NEVER returned. Returns 401 if token is invalid/expired.
+
+8. PATCH /users/me
+   Body: { metadata?: object }
+   Response: updated UserEntity
+   Notes: DEEP MERGE — only keys you send are updated, existing keys are preserved.
+          To delete a key send it as null: { metadata: { keyToRemove: null } }
+
+9. POST /users/avatar    [multipart/form-data]
+   Form fields: file (required) — image file (JPG, PNG, WebP, etc.)
+   Response: updated UserEntity with new avatarUrl
+   Notes: Do NOT set Content-Type manually — FormData sets it automatically.
+          Image is auto-compressed to WebP. Use user.avatarUrl to display the result.
+
+10. POST /users/ban    [Admin — no JWT needed]
+    Body: { adminPass: string, userId: string }
+    Response: updated UserEntity
+    Notes: adminPass must match the ADMIN_PASS env variable. Never expose in a public frontend.
+           userId comes from GET /users/me (id field) or your database.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MAIL ENDPOINTS  (Admin — no JWT needed)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+11. POST /mail/send-custom
+    Body: { adminPass: string, to: string, subject: string, htmlTemplate: string }
+    Response: { message: string }
+    Notes: Sends a fully custom HTML email. Use inline CSS for best email client compatibility.
+           adminPass must match ADMIN_PASS env variable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MEDIA ENDPOINTS  (require Authorization: Bearer <token>)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+12. POST /media/images    [multipart/form-data]
+    Form fields: file (required) — image file; tag (required) — category label (e.g. "blog-thumbnails")
+    Response: MediaEntity { id, url, tag, mimeType, size, filename, createdAt }
+    Notes: Builds a per-user media library. Different from /users/avatar (which is one profile picture).
+           Images are auto-compressed to WebP. Save the returned id if you need to delete later.
+           Do NOT set Content-Type manually.
+
+13. GET /media?tag=OPTIONAL_TAG
+    Response: MediaEntity[]  (empty array if none found — not 404)
+    Notes: Returns all media for the user. Filter by tag with ?tag=your-tag.
+
+14. GET /media/:id
+    Response: MediaEntity
+    Notes: Returns a single file by ID. Only returns files owned by the authenticated user.
+
+15. DELETE /media/:id
+    Response: { message: "Media successfully deleted" }
+    Notes: PERMANENT — deletes from both database and cloud storage. Cannot be undone.
+           Only the owner can delete their own files.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY RULES & PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Password strength: min 8 chars, must contain at least one uppercase letter, one lowercase letter,
+  one number, and one special character from: @$!%*?&
+
+Token storage: store accessToken from login/signup in localStorage (or a secure cookie).
+  Attach to every protected request as:  Authorization: Bearer <token>
+
+metadata field: free-form JSON object on each user. Use it to store anything you need — name,
+  phone, plan, preferences, onboarding state, etc. PATCH /users/me deep-merges updates.
+
+Email verification flow:
+  signup (with redirectUrl) → user gets email → clicks link → /auth/verify-email → redirects to your app
+
+Password reset flow:
+  forgot-password (with redirectUrl) → user gets email → clicks link → /auth/reset-password
+  → redirects to YOUR redirectUrl?token=TOKEN → your page reads token → update-password
+
+Admin authentication: endpoints /users/ban and /mail/send-custom use adminPass (not JWT).
+  adminPass must match the ADMIN_PASS environment variable on the server.
 `;
 
     type Ep = {
