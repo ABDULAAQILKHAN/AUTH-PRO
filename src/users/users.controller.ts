@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Body, UseGuards, UseInterceptors, UploadedFile, Request, UnauthorizedException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
@@ -64,13 +65,16 @@ export class UsersController {
     return this.usersService.updateAvatar(req.user.userId, avatarUrl);
   }
 
+  // 5 ban attempts per minute — slows down admin credential guessing
   @Post('ban')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Ban a user (Admin only)' })
   @ApiResponse({ status: 200, description: 'User banned successfully.', type: UserEntity })
   @ApiResponse({ status: 401, description: 'Invalid admin password.' })
+  @ApiResponse({ status: 429, description: 'Too many requests.' })
   async banUser(@Body() banUserDto: BanUserDto): Promise<UserEntity> {
     const adminPass = process.env.ADMIN_PASS;
-    
+
     if (!adminPass || banUserDto.adminPass !== adminPass) {
       throw new UnauthorizedException('Invalid admin password');
     }
