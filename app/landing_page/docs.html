@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth-Pro API Documentation</title>
+    <link rel="icon" href="icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .text-gradient { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #promptModal { display: none; }
+        #promptModal.active { display: flex; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .flashy-btn {
+            position: relative;
+            background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+            background-size: 200% auto;
+            color: white;
+            animation: shine 3s linear infinite;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+        .flashy-btn:hover { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
+        @keyframes shine { to { background-position: 200% center; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+    <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-900 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+    <div class="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-900 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+
+    <nav class="w-full glass z-20 px-8 py-4 flex justify-between items-center sticky top-0 border-b border-white/5">
+        <a href="index.html" class="flex items-center gap-3 group">
+            <img src="icon.png" alt="Auth-Pro Icon" class="w-10 h-10 rounded-lg shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
+            <span class="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-500 text-gradient">Auth-Pro</span>
+        </a>
+        <button onclick="document.getElementById('promptModal').classList.add('active')" class="flashy-btn px-6 py-2.5 rounded-full font-bold transition-all transform hover:scale-105 flex items-center gap-2 text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Copy AI Prompt
+        </button>
+    </nav>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-8 z-10 pb-24">
+        <div class="text-center mb-16 mt-8">
+            <span class="bg-blue-500/10 text-blue-400 px-4 py-1.5 rounded-full text-sm font-semibold border border-blue-500/20 tracking-wide uppercase">15 Endpoints · Beginner Friendly</span>
+            <h1 class="text-5xl font-extrabold mb-6 mt-6 tracking-tight">API <span class="bg-gradient-to-r from-sky-400 to-indigo-400 text-gradient">Documentation</span></h1>
+            <p class="text-slate-400 text-lg max-w-3xl mx-auto leading-relaxed">Complete reference for all Auth-Pro endpoints. Each entry includes the exact payload, a detailed usage guide, and a ready-to-paste JavaScript example.</p>
+            <p class="text-slate-500 text-sm mt-3">Replace <code class="text-amber-400 bg-slate-800 px-2 py-0.5 rounded">https://your-api-url.com</code> with your actual deployed API base URL.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-3 mb-10 justify-center">
+            <span class="bg-slate-800/60 border border-white/10 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full">🔐 Auth (6)</span>
+            <span class="bg-slate-800/60 border border-white/10 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full">👤 Users (4)</span>
+            <span class="bg-slate-800/60 border border-white/10 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full">📧 Mail (1)</span>
+            <span class="bg-slate-800/60 border border-white/10 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full">🖼 Media (4)</span>
+        </div>
+
+        <div class="space-y-2">
+
+            <!-- POST /auth/signup -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/auth/signup</code>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Register a New User</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Creates a new user account and immediately sends an email verification link to the provided address.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "email": "user@example.com",            // required
+  "password": "MyP@ssword1",              // required — min 8 chars, must include uppercase,
+                                          //   lowercase, number &amp; special char (@$!%*?&amp;)
+  "redirectUrl": "https://yourapp.com/dashboard", // required
+  "metadata": {                           // optional
+    "name": "Aaqil khan",
+    "phone": "+1234567890",
+    "plan": "free"
+  }
+}</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Call this on your signup form submission.<br><br>
+<strong>email</strong> and <strong>password</strong> are required. Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character (<code>@$!%*?&amp;</code>).<br><br>
+<strong>redirectUrl</strong> is the page on YOUR app that the user lands on after clicking the verification link. Auth-Pro redirects there cleanly — no token is appended.<br><br>
+<strong>metadata</strong> accepts any JSON object. Store name, phone, role, plan, or anything else you need. These fields can be updated later with <code>PATCH /users/me</code> and are deep-merged on every update.<br><br>
+The response returns an <code>accessToken</code> (JWT) immediately — the user is logged in right away even before verifying their email.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>fetch('https://your-api-url.com/auth/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'MyP@ssword1',
+    redirectUrl: 'https://yourapp.com/dashboard',
+    metadata: {
+      name: 'Aaqil khan',
+      plan: 'free'
+    }
+  })
+})
+.then(res =&gt; res.json())
+.then(data =&gt; {
+  localStorage.setItem('token', data.accessToken);
+  console.log('Signed up successfully!');
+});</code></div>
+                </div>
+            </div>
+
+            <!-- POST /auth/login -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/auth/login</code>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Login User</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Authenticates an existing user with email and password and returns a JWT access token.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "email": "user@example.com",  // required
+  "password": "MyP@ssword1"     // required
+}
+
+// Response:
+// { "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Call this when the user submits your login form.<br><br>
+On success you receive <code>{ "accessToken": "eyJ..." }</code>. <strong>Store this token</strong> in <code>localStorage</code> or a secure cookie — you need it for every protected API call.<br><br>
+Attach it to protected requests via the header:<br>
+<code>Authorization: Bearer &lt;your-token&gt;</code><br><br>
+The token is a standard JWT. You can decode it client-side to read the user's <code>userId</code> from the <code>sub</code> claim.<br><br>
+Returns <strong>401 Unauthorized</strong> if the credentials are wrong or if the user has been banned.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>fetch('https://your-api-url.com/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'MyP@ssword1'
+  })
+})
+.then(res =&gt; {
+  if (!res.ok) throw new Error('Invalid credentials');
+  return res.json();
+})
+.then(data =&gt; {
+  localStorage.setItem('token', data.accessToken);
+  window.location.href = '/dashboard';
+})
+.catch(err =&gt; alert('Login failed: ' + err.message));</code></div>
+                </div>
+            </div>
+
+            <!-- POST /auth/forgot-password -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/auth/forgot-password</code>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Forgot Password</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Sends a secure, single-use password reset link to the user's email address.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "email": "user@example.com",
+  "redirectUrl": "https://yourapp.com/reset-password"
+}
+
+// Response (always the same regardless of whether email exists):
+// { "message": "If the email exists, a reset link has been sent." }</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Call this when the user clicks "Forgot Password?" on your login page.<br><br>
+Auth-Pro generates a short-lived reset token and emails the user a link. That link redirects the user to YOUR <code>redirectUrl</code> with the token appended:<br>
+<code>https://yourapp.com/reset-password?token=abc123xyz</code><br><br>
+Your reset page must then:<br>
+1. Read <code>token</code> from the URL<br>
+2. Show a "New Password" input<br>
+3. Call <code>POST /auth/update-password</code> with the token and new password<br><br>
+The response is always the same message — even if the email doesn't exist. This prevents email enumeration attacks.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>fetch('https://your-api-url.com/auth/forgot-password', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    redirectUrl: 'https://yourapp.com/reset-password'
+  })
+})
+.then(res =&gt; res.json())
+.then(data =&gt; {
+  alert('Check your inbox for a password reset link!');
+});</code></div>
+                </div>
+            </div>
+
+            <!-- POST /auth/update-password -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/auth/update-password</code>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Update / Reset Password</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Sets a new password using the one-time reset token delivered via the forgot-password email.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "token": "abc123xyz...",
+  "newPassword": "NewP@ssword1"
+}
+
+// Response on success:
+// { "message": "Password successfully updated." }</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Use this on your frontend reset-password page.<br><br>
+<strong>Step 1 — Extract the token on page load:</strong><br>
+<code>const token = new URLSearchParams(window.location.search).get('token');</code><br><br>
+<strong>Step 2 — Show a "New Password" input to the user.</strong><br><br>
+<strong>Step 3 — On form submit, call this endpoint</strong> with the token and new password.<br><br>
+Reset tokens are <strong>single-use and time-limited</strong> — once used or expired, this endpoint returns 400. On success, redirect the user to the login page.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const resetToken = new URLSearchParams(window.location.search).get('token');
+
+document.querySelector('#resetForm').addEventListener('submit', async (e) =&gt; {
+  e.preventDefault();
+  const newPassword = document.querySelector('#newPassword').value;
+
+  const res = await fetch('https://your-api-url.com/auth/update-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: resetToken, newPassword })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    alert('Password updated! Please log in.');
+    window.location.href = '/login';
+  } else {
+    alert('Error: ' + (data.message || 'Invalid or expired token.'));
+  }
+});</code></div>
+                </div>
+            </div>
+
+            <!-- GET /auth/verify-email -->
+            <div class="glass rounded-xl border-l-4 border-l-sky-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-sky-300 bg-sky-500/20 border border-sky-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">GET</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/auth/verify-email</code>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Verify Email Address</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Confirms a user's email via the token sent at signup. This link is clicked directly from the email — you don't call it in code.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Query Parameters (no request body)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// This is a GET endpoint — no request body.
+// The user clicks this link directly from their inbox.
+
+// Query Parameters:
+// token       (required) — the verification token
+// redirectUrl (optional) — your frontend page to redirect to
+
+// Example link in the email:
+// https://your-api-url.com/auth/verify-email
+//   ?token=TOKEN&amp;redirectUrl=https://yourapp.com/dashboard
+
+// If redirectUrl is provided  → redirects the user to that URL
+// If redirectUrl is omitted   → returns JSON: { "message": "Email successfully verified." }
+// If token is invalid/expired → returns 400</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed"><strong>You don't call this endpoint in your code.</strong> It is the destination of the email verification link that Auth-Pro automatically sends when a user signs up.<br><br>
+The full flow:<br>
+1. User signs up via <code>POST /auth/signup</code> — you pass a <code>redirectUrl</code><br>
+2. Auth-Pro sends the user a verification email with a link pointing to this endpoint<br>
+3. User clicks the link — Auth-Pro marks their email as verified<br>
+4. Auth-Pro redirects the user to your <code>redirectUrl</code><br><br>
+To control where the user lands after verification, set the <code>redirectUrl</code> correctly during signup.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>// You don't call this endpoint directly.
+// Just pass the correct redirectUrl during signup:
+
+fetch('https://your-api-url.com/auth/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'MyP@ssword1',
+    // After the user clicks the verification email, they land here:
+    redirectUrl: 'https://yourapp.com/dashboard',
+    metadata: { name: 'Alice' }
+  })
+});</code></div>
+                </div>
+            </div>
+
+            <!-- GET /auth/reset-password -->
+            <div class="glass rounded-xl border-l-4 border-l-sky-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-sky-300 bg-sky-500/20 border border-sky-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">GET</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/auth/reset-password</code>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Password Reset Redirect</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Validates the reset link from the email and redirects the user to your frontend with the token appended to the URL.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Query Parameters (no request body)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// This is a GET redirect endpoint — no request body.
+// The user clicks this link directly from their inbox.
+
+// Query Parameters:
+// token       (required) — the reset token
+// redirectUrl (optional) — your frontend reset-password page
+
+// What happens:
+// Auth-Pro redirects the user to:
+//   https://yourapp.com/reset-password?token=TOKEN
+// Your page then reads that token and calls POST /auth/update-password</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed"><strong>You don't call this endpoint in your code.</strong> It is the link inside the forgot-password email.<br><br>
+When the user clicks it, Auth-Pro appends the token to your <code>redirectUrl</code> and redirects the browser:<br>
+<code>https://yourapp.com/reset-password?token=abc123xyz</code><br><br>
+Your page then extracts the token from the URL and calls <code>POST /auth/update-password</code>.<br><br>
+Always set the redirectUrl in your forgot-password call.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>// You don't call this endpoint directly.
+// Set up the flow correctly in your forgot-password call:
+
+fetch('https://your-api-url.com/auth/forgot-password', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    redirectUrl: 'https://yourapp.com/reset-password'
+  })
+});
+
+// Then on your /reset-password page:
+const token = new URLSearchParams(window.location.search).get('token');
+// Pass this token to POST /auth/update-password</code></div>
+                </div>
+            </div>
+
+            <!-- GET /users/me -->
+            <div class="glass rounded-xl border-l-4 border-l-sky-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-sky-300 bg-sky-500/20 border border-sky-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">GET</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/users/me</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Get Current User Profile</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Returns the full profile of the authenticated user including id, email, avatarUrl, metadata, and verification status.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Required Header (no request body)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// No request body.
+// Required Header:
+// Authorization: Bearer YOUR_JWT_TOKEN
+
+// Response shape:
+{
+  "id": "clx9ab12cd34ef56",
+  "email": "user@example.com",
+  "avatarUrl": "https://cdn.example.com/avatars/abc.webp",
+  "metadata": { "name": "Aaqil khan", "plan": "pro" },
+  "isEmailVerified": true,
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-06-01T12:00:00.000Z"
+  // "password" is NEVER returned
+}</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Call this on any page that needs user data — your dashboard, settings page, profile page, etc.<br><br>
+The response includes:<br>
+• <strong>id</strong> — unique user ID (needed for admin operations like ban)<br>
+• <strong>email</strong> — the user's email address<br>
+• <strong>avatarUrl</strong> — cloud CDN URL of their profile picture (<code>null</code> if not set)<br>
+• <strong>metadata</strong> — any custom JSON you stored (<code>null</code> if nothing stored yet)<br>
+• <strong>isEmailVerified</strong> — whether the user has clicked their verification email link<br><br>
+The <code>password</code> field is <strong>never</strong> returned. Returns <strong>401</strong> if the token is missing, invalid, or expired.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+
+fetch('https://your-api-url.com/users/me', {
+  headers: { 'Authorization': `Bearer ${token}` }
+})
+.then(res =&gt; {
+  if (res.status === 401) throw new Error('Not authenticated');
+  return res.json();
+})
+.then(user =&gt; {
+  console.log('Email:', user.email);
+  console.log('Verified:', user.isEmailVerified);
+  if (user.avatarUrl) {
+    document.querySelector('#avatar').src = user.avatarUrl;
+  }
+});</code></div>
+                </div>
+            </div>
+
+            <!-- PATCH /users/me -->
+            <div class="glass rounded-xl border-l-4 border-l-orange-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-orange-300 bg-orange-500/20 border border-orange-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">PATCH</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/users/me</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Update User Metadata</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Deep-merges custom metadata into the user's profile. Only keys you send are updated — all existing metadata is preserved.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "metadata": {
+    "displayName": "Alice",
+    "theme": "dark",
+    "onboardingStep": 3
+  }
+}
+
+// IMPORTANT: This is a MERGE, not a replace.
+// To delete a key, send it as null:
+// { "metadata": { "oldKey": null } }</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Use this to save any custom user-level data — UI preferences, settings, onboarding state, plan details, etc.<br><br>
+<strong>Merge behaviour:</strong> The server deep-merges your payload into existing metadata. Keys not included in your payload are untouched.<br><br>
+<strong>Deleting a key:</strong> Send the key with a <code>null</code> value:<br>
+<code>{ "metadata": { "keyToRemove": null } }</code><br><br>
+Returns the full updated user object on success. Returns 401 if unauthenticated.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+
+fetch('https://your-api-url.com/users/me', {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    metadata: {
+      theme: 'dark',
+      displayName: 'Alice',
+      onboardingComplete: true
+    }
+  })
+})
+.then(res =&gt; res.json())
+.then(user =&gt; console.log('Updated metadata:', user.metadata));</code></div>
+                </div>
+            </div>
+
+            <!-- POST /users/avatar -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/users/avatar</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Upload Profile Picture</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Uploads a profile image for the authenticated user. Automatically compressed to WebP and stored in cloud storage.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Multipart Form Data</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// Authorization: Bearer YOUR_JWT_TOKEN
+// Content-Type: multipart/form-data ← set AUTOMATICALLY, do NOT set manually
+
+// Form Fields:
+// file — (required) the image file (JPG, PNG, WebP, etc.)
+
+// Response: full UserEntity with updated avatarUrl field</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Use an HTML <code>&lt;input type="file" accept="image/*"&gt;</code> to let the user pick an image. Build a <code>FormData</code> object and append the file under the key <code>"file"</code>.<br><br>
+<strong>Critical:</strong> Do NOT set <code>Content-Type</code> manually. The browser adds it automatically with the correct multipart boundary string.<br><br>
+The image is automatically compressed and converted to <strong>WebP format</strong> before being saved to cloud storage. Use <code>user.avatarUrl</code> as the <code>src</code> of an <code>&lt;img&gt;</code> tag to display the avatar.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+const fileInput = document.querySelector('#avatarInput');
+
+fileInput.addEventListener('change', async () =&gt; {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file); // field name MUST be "file"
+
+  const res = await fetch('https://your-api-url.com/users/avatar', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+      // DO NOT add Content-Type here!
+    },
+    body: formData
+  });
+
+  const user = await res.json();
+  document.querySelector('#avatarImg').src = user.avatarUrl;
+});</code></div>
+                </div>
+            </div>
+
+            <!-- POST /users/ban -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/users/ban</code>
+                    <span class="text-red-300 bg-red-500/10 border border-red-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🛡 Admin Only</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Ban User (Admin)</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Permanently bans a user account by their ID. Requires the server-side admin password. No JWT needed.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "adminPass": "your-admin-password",
+  "userId": "clx9ab12cd34ef56gh78"
+}
+
+// Returns 401 if adminPass is wrong
+// Returns 404 if userId does not exist</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Admin-only endpoint — <strong>no JWT required</strong>. Authentication is done via the <code>adminPass</code> field, which must match the <code>ADMIN_PASS</code> environment variable on the server.<br><br>
+To get a user's <code>userId</code>, call <code>GET /users/me</code> while authenticated as that user, or look it up in your database.<br><br>
+<strong>Security:</strong> Never expose this endpoint or <code>adminPass</code> in a public frontend. Only call it from a secure server-side admin panel or CLI tool.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>// Admin-only — run from a secure server-side context!
+
+fetch('https://your-api-url.com/users/ban', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    adminPass: 'your-admin-password',
+    userId: 'clx9ab12cd34ef56gh78'
+  })
+})
+.then(res =&gt; res.json())
+.then(data =&gt; {
+  if (data.statusCode === 401) console.error('Wrong admin password!');
+  else if (data.statusCode === 404) console.error('User not found!');
+  else console.log('User banned:', data.id);
+});</code></div>
+                </div>
+            </div>
+
+            <!-- POST /mail/send-custom -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/mail/send-custom</code>
+                    <span class="text-red-300 bg-red-500/10 border border-red-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🛡 Admin Only</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Send Custom Email (Admin)</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Sends a fully custom HTML email to any address on behalf of your application. Requires the admin password.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Request Body (JSON)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">{
+  "adminPass": "your-admin-password",
+  "to": "recipient@example.com",
+  "subject": "Welcome to Our Platform!",
+  "htmlTemplate": "&lt;h1&gt;Hello!&lt;/h1&gt;&lt;p&gt;...&lt;/p&gt;"
+}
+
+// Response on success:
+// { "message": "Email successfully sent." }</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Admin-only endpoint — no JWT required.<br><br>
+The <code>htmlTemplate</code> field accepts complete HTML. Tips for best email client compatibility:<br>
+• Use <strong>inline CSS</strong> (<code>style="..."</code> attributes) — most email clients strip external <code>&lt;style&gt;</code> tags<br>
+• Use table-based layouts for complex designs<br>
+• Keep image src URLs absolute<br><br>
+Returns 401 if the admin password is wrong.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>fetch('https://your-api-url.com/mail/send-custom', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    adminPass: 'your-admin-password',
+    to: 'newuser@example.com',
+    subject: 'Welcome to Our Platform!',
+    htmlTemplate: `
+      &lt;div style="font-family:Arial,sans-serif;max-width:600px;padding:24px"&gt;
+        &lt;h1 style="color:#3b82f6"&gt;Welcome aboard!&lt;/h1&gt;
+        &lt;p&gt;Your account is ready.&lt;/p&gt;
+        &lt;a href="https://yourapp.com/dashboard"
+           style="display:inline-block;background:#3b82f6;color:#fff;
+                  padding:12px 24px;text-decoration:none;border-radius:6px"&gt;
+          Go to Dashboard
+        &lt;/a&gt;
+      &lt;/div&gt;
+    `
+  })
+})
+.then(res =&gt; res.json())
+.then(data =&gt; console.log(data.message));</code></div>
+                </div>
+            </div>
+
+            <!-- POST /media/images -->
+            <div class="glass rounded-xl border-l-4 border-l-green-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-green-300 bg-green-500/20 border border-green-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">POST</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/media/images</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Upload Image to Media Library</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Uploads and compresses an image into the user's personal media library with a required tag for categorization.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Multipart Form Data</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// Authorization: Bearer YOUR_JWT_TOKEN
+// Content-Type: set automatically by FormData
+
+// Form Fields:
+// file — (required) the image file
+// tag  — (required) category label e.g. "blog-thumbnails"
+
+// Response (MediaEntity):
+{
+  "id": "clx9ab12cd34ef56",
+  "url": "https://cdn.example.com/media/images/uuid.webp",
+  "tag": "blog-thumbnails",
+  "mimeType": "image/webp",
+  "size": 45312,
+  "filename": "media/images/uuid.webp",
+  "createdAt": "2025-06-01T00:00:00.000Z"
+}</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">This is different from <code>POST /users/avatar</code> — that sets one profile picture. This builds a <strong>full media library</strong> with multiple organized files per user.<br><br>
+The <code>tag</code> field is required and is how you group and retrieve images later:<br>
+• <code>"blog-thumbnails"</code> for article cover images<br>
+• <code>"project-alpha"</code> for project-specific assets<br><br>
+The image is compressed to <strong>WebP</strong> automatically. Save the response <code>id</code> if you need to delete the file later.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+
+async function uploadToMediaLibrary(file, tag) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('tag', tag);
+
+  const res = await fetch('https://your-api-url.com/media/images', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+
+  const media = await res.json();
+  console.log('URL:', media.url);
+  console.log('ID:', media.id); // save to delete later
+  return media;
+}</code></div>
+                </div>
+            </div>
+
+            <!-- GET /media -->
+            <div class="glass rounded-xl border-l-4 border-l-sky-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-sky-300 bg-sky-500/20 border border-sky-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">GET</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/media</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">List User Media</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Returns all media files uploaded by the authenticated user. Optionally filter by tag.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Query Parameters (no request body)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// Authorization: Bearer YOUR_JWT_TOKEN
+
+// Optional Query Parameter:
+// ?tag=your-tag  — filter results to only files with this tag
+
+// GET /media                     → all media files
+// GET /media?tag=blog-thumbnails → only files tagged "blog-thumbnails"
+
+// Returns [] (empty array) if no files found — not 404</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Use the optional <code>?tag=</code> query parameter to filter results by category. Each item includes:<br>
+• <strong>id</strong> — use to fetch or delete a specific file<br>
+• <strong>url</strong> — public CDN URL to display in an <code>&lt;img&gt;</code> tag<br>
+• <strong>tag</strong> — the category label<br>
+• <strong>size</strong> — file size in bytes after compression<br>
+• <strong>createdAt</strong> — upload timestamp<br><br>
+Returns an empty array <code>[]</code> if no files exist — not a 404.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+
+async function getMediaByTag(tag) {
+  const url = `https://your-api-url.com/media?tag=${encodeURIComponent(tag)}`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return res.json();
+}
+
+getMediaByTag('blog-thumbnails').then(images =&gt; {
+  const gallery = document.querySelector('#gallery');
+  images.forEach(img =&gt; {
+    const el = document.createElement('img');
+    el.src = img.url;
+    el.dataset.mediaId = img.id;
+    gallery.appendChild(el);
+  });
+});</code></div>
+                </div>
+            </div>
+
+            <!-- GET /media/:id -->
+            <div class="glass rounded-xl border-l-4 border-l-sky-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-sky-300 bg-sky-500/20 border border-sky-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">GET</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/media/:id</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Get Single Media File</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Returns the full details of a specific media file by its unique ID.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Path Parameter (no request body)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// Authorization: Bearer YOUR_JWT_TOKEN
+// :id — the unique media file ID
+
+// Example: GET /media/clx9ab12cd34ef56gh78
+
+// Response (MediaEntity):
+{
+  "id": "clx9ab12cd34ef56gh78",
+  "url": "https://cdn.example.com/media/images/uuid.webp",
+  "tag": "blog-thumbnails",
+  "mimeType": "image/webp",
+  "size": 45312,
+  "createdAt": "2025-06-01T00:00:00.000Z"
+}</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Use this to retrieve the complete details of a single uploaded file by its <code>id</code>.<br><br>
+The <code>id</code> is returned when you upload an image and is included in every item from <code>GET /media</code>.<br><br>
+<strong>Access control:</strong> Only returns files owned by the currently authenticated user. If the ID belongs to another user's file, the server returns 404 (not 403 — to prevent ID enumeration).</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+const mediaId = 'clx9ab12cd34ef56gh78';
+
+fetch(`https://your-api-url.com/media/${mediaId}`, {
+  headers: { 'Authorization': `Bearer ${token}` }
+})
+.then(res =&gt; {
+  if (res.status === 404) throw new Error('File not found or access denied');
+  return res.json();
+})
+.then(media =&gt; {
+  console.log('URL:', media.url);
+  document.querySelector('#previewImg').src = media.url;
+});</code></div>
+                </div>
+            </div>
+
+            <!-- DELETE /media/:id -->
+            <div class="glass rounded-xl border-l-4 border-l-red-500 mb-8 hover:bg-slate-800/50 transition overflow-hidden">
+                <div class="p-5 flex flex-wrap items-center gap-3 border-b border-white/5">
+                    <span class="text-red-300 bg-red-500/20 border border-red-500/40 px-3 py-1 rounded-lg font-mono font-bold text-sm shrink-0">DELETE</span>
+                    <code class="text-slate-100 font-mono font-bold text-base flex-grow">/media/:id</code>
+                    <span class="text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 text-xs px-2.5 py-1 rounded-full font-semibold shrink-0">🔒 Auth Required</span>
+                </div>
+                <div class="px-6 pt-5 pb-4 border-b border-white/5">
+                    <h2 class="text-xl font-bold text-sky-300 mb-2">Delete Media File</h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">Permanently deletes a media file from both the database and cloud storage. This action cannot be undone.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-white/5">
+                    <div class="p-6 border-r border-white/5">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Path Parameter (no request body)</h4>
+                        <pre class="bg-slate-950/70 rounded-xl p-4 font-mono text-xs text-amber-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed">// Authorization: Bearer YOUR_JWT_TOKEN
+// :id — the unique media file ID to delete
+
+// Example: DELETE /media/clx9ab12cd34ef56gh78
+
+// Response on success:
+// { "message": "Media successfully deleted" }
+
+// After deletion:
+// - The file's URL will return 404 from cloud storage
+// - PERMANENT — cannot be undone</pre>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">How to Use</h4>
+                        <div class="text-sm text-slate-300 bg-slate-950/40 p-4 rounded-xl border border-white/5 leading-relaxed">Permanently deletes the media file — both the <strong>database record</strong> and the <strong>file in cloud storage</strong>. This is irreversible.<br><br>
+Only the <strong>owner</strong> of the file can delete it. Attempting to delete another user's file returns 404.<br><br>
+<strong>Best practice:</strong> Always confirm with the user before calling delete. Returns 401 if unauthenticated.</div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Example Code (JavaScript / Fetch)</h4>
+                    <div class="bg-[#0d1117] rounded-xl p-5 font-mono text-xs text-blue-300 border border-white/5 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>const token = localStorage.getItem('token');
+
+async function deleteMedia(mediaId) {
+  const confirmed = confirm('Delete this file? This cannot be undone.');
+  if (!confirmed) return;
+
+  const res = await fetch(`https://your-api-url.com/media/${mediaId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    console.log(data.message);
+    document.querySelector(`[data-media-id="${mediaId}"]`)?.remove();
+  } else {
+    console.error('Delete failed:', data);
+  }
+}
+
+document.querySelectorAll('.delete-media-btn').forEach(btn =&gt; {
+  btn.addEventListener('click', () =&gt; deleteMedia(btn.dataset.mediaId));
+});</code></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- AI Prompt Modal -->
+    <div id="promptModal" class="fixed inset-0 z-50 items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+        <div class="modal-content glass max-w-3xl w-full rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-white/10">
+            <div class="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
+                <h3 class="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-500 text-gradient">AI Implementation Prompt</h3>
+                <button onclick="document.getElementById('promptModal').classList.remove('active')" class="text-slate-400 hover:text-white transition bg-white/5 hover:bg-white/10 p-2 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow bg-slate-950/50">
+                <p class="text-sm text-slate-300 mb-4 font-medium">Paste this into Claude, ChatGPT, or any AI to instantly generate your frontend auth integration!</p>
+                <div class="relative group">
+                    <textarea id="promptText" readonly class="w-full h-72 bg-[#0a0f1c] text-green-400 font-mono text-sm p-5 rounded-xl border border-slate-700/50 focus:outline-none focus:border-purple-500/50 resize-none shadow-inner">You are an expert AI coding assistant helping the user integrate Auth-Pro into their frontend application.
+
+BASE URL: https://your-api-url.com
+All requests use JSON bodies unless noted as multipart/form-data.
+Protected routes require the header:  Authorization: Bearer &lt;accessToken&gt;
+
+AUTH ENDPOINTS
+1. POST /auth/signup       — Body: { email, password, redirectUrl, metadata? }  → { accessToken }
+2. POST /auth/login        — Body: { email, password }                           → { accessToken }
+3. POST /auth/forgot-password — Body: { email, redirectUrl }                    → { message }
+4. POST /auth/update-password — Body: { token, newPassword }                    → { message }
+5. GET  /auth/verify-email    — clicked from email, redirects to your app
+6. GET  /auth/reset-password  — clicked from email, appends token to redirectUrl
+
+USER ENDPOINTS  (require Authorization: Bearer &lt;token&gt;)
+7. GET   /users/me    → { id, email, avatarUrl, metadata, isEmailVerified, createdAt, updatedAt }
+8. PATCH /users/me    — Body: { metadata?: object }  (deep merge)
+9. POST  /users/avatar — multipart/form-data: file
+
+ADMIN ENDPOINTS (no JWT — use adminPass matching ADMIN_PASS env var)
+10. POST /users/ban         — Body: { adminPass, userId }
+11. POST /mail/send-custom  — Body: { adminPass, to, subject, htmlTemplate }
+
+MEDIA ENDPOINTS (require Authorization: Bearer &lt;token&gt;)
+12. POST   /media/images  — multipart/form-data: file, tag
+13. GET    /media         — ?tag=optional
+14. GET    /media/:id
+15. DELETE /media/:id
+
+Password rules: min 8 chars, uppercase, lowercase, number, special char (@$!%*?&amp;)
+Token storage: store accessToken in localStorage, attach as Authorization: Bearer &lt;token&gt;
+metadata: free-form JSON, deep-merged on PATCH /users/me</textarea>
+                </div>
+            </div>
+            <div class="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
+                <button onclick="document.getElementById('promptModal').classList.remove('active')" class="px-6 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition font-medium">Close</button>
+                <button onclick="copyPrompt()" id="copyBtn" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition flex items-center gap-2 shadow-lg shadow-purple-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    Copy Prompt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyPrompt() {
+            const promptText = document.getElementById('promptText');
+            promptText.select();
+            document.execCommand('copy');
+            const btn = document.getElementById('copyBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!';
+            btn.classList.add('bg-green-500', 'shadow-green-500/20');
+            btn.classList.remove('bg-purple-600', 'shadow-purple-500/20');
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('bg-green-500', 'shadow-green-500/20');
+                btn.classList.add('bg-purple-600', 'shadow-purple-500/20');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

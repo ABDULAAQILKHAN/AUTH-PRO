@@ -1,0 +1,39 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+.glass {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.float {
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes fadein {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.f1 { animation: fadein 0.7s ease both; }
+.f2 { animation: fadein 0.7s 0.15s ease both; }
+.f3 { animation: fadein 0.7s 0.3s ease both; }
+
+.glow {
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.2);
+}
