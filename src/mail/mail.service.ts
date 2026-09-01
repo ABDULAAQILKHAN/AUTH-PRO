@@ -9,6 +9,12 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor() {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      this.logger.warn(
+        'SMTP credentials are not fully configured — email sending will fail until SMTP_HOST, SMTP_USER, and SMTP_PASS are set. ' +
+        `Visit http://localhost:${process.env.PORT ?? 3000} for setup steps.`,
+      );
+    }
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587', 10),

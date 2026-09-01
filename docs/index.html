@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth-Pro | Self-Hosted Auth, Mail &amp; Storage</title>
-    <meta name="description" content="Auth-Pro is an open-source, self-hosted alternative to Supabase. Use your own database, SMTP, and Cloudflare R2 storage.">
+    <meta name="description" content="Auth-Pro is an open-source, self-hosted alternative to Supabase. Use your own database, SMTP, and Cloudflare R2 storage. Beginner-friendly setup guide included.">
     <link rel="icon" href="icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+        code, pre { font-family: 'Fira Code', monospace; }
         #docs-drawer {
             position: fixed;
             top: 0;
@@ -19,7 +21,7 @@
             z-index: 50;
             transform: translateX(100%);
             transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            background: #020617;
+            background: #030712;
             border-left: 1px solid rgba(255,255,255,0.08);
             box-shadow: -20px 0 60px rgba(0,0,0,0.6);
             display: flex;
@@ -40,106 +42,601 @@
         @media (max-width: 768px) {
             #docs-drawer { width: 100%; }
         }
+        .step-num {
+            width: 2.25rem; height: 2.25rem; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 9999px; font-weight: 800; font-size: 0.95rem;
+        }
+        #section-nav a { text-decoration: none; }
+        .section-dot {
+            width: 0.55rem; height: 0.55rem; border-radius: 9999px;
+            background: rgba(255,255,255,0.18);
+            transition: all 0.3s ease;
+        }
+        .section-dot.active {
+            width: 0.85rem; height: 0.85rem;
+            background: linear-gradient(135deg,#22d3ee,#d946ef);
+            box-shadow: 0 0 12px rgba(34,211,238,0.6);
+        }
+        .section-dot-label {
+            opacity: 0; transform: translateX(6px);
+            transition: all 0.2s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .section-dot-row:hover .section-dot-label { opacity: 1; transform: translateX(0); }
+        #toTopBtn { transition: opacity 0.3s ease, transform 0.3s ease; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden">
-    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 rounded-full blur-[120px] opacity-15 pointer-events-none"></div>
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-500 rounded-full blur-[130px] opacity-20 pointer-events-none drift"></div>
+    <div class="fixed top-[20%] right-[-15%] w-[35%] h-[35%] bg-fuchsia-500 rounded-full blur-[130px] opacity-15 pointer-events-none drift-slow"></div>
+    <div class="fixed bottom-[10%] left-[-10%] w-[35%] h-[35%] bg-emerald-500 rounded-full blur-[130px] opacity-10 pointer-events-none drift"></div>
+    <div class="fixed bottom-[-15%] right-[-10%] w-[40%] h-[40%] bg-violet-500 rounded-full blur-[130px] opacity-15 pointer-events-none drift-slow"></div>
 
     <!-- Navbar -->
-    <nav class="w-full glass z-10 px-8 py-4 flex justify-between items-center sticky top-0">
+    <nav class="w-full glass-nav z-20 px-8 py-4 flex justify-between items-center sticky top-0">
         <div class="flex items-center gap-3">
             <img src="icon.png" alt="Auth-Pro" class="w-10 h-10 rounded-lg shadow-lg shadow-sky-500/20 float">
-            <span class="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-500 text-gradient">Auth-Pro</span>
+            <span class="text-2xl font-bold bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 text-gradient">Auth-Pro</span>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
-               class="px-5 py-2 rounded-full border border-slate-600/50 hover:border-slate-400/60 hover:bg-white/5 transition text-slate-300 font-medium flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-                Open Source
+        <div class="flex items-center gap-2 sm:gap-3">
+            <a href="#choose-path" class="hidden md:inline-block px-4 py-2 rounded-full text-slate-300 hover:text-white hover:bg-white/5 transition font-medium text-sm">Get Started</a>
+            <a href="#env-keys" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-400/30 hover:bg-amber-400/20 transition text-amber-300 font-medium text-sm">
+                🔑 Get ENV
             </a>
-            <button onclick="openDocs()" class="px-6 py-2 rounded-full bg-sky-500/10 border border-sky-400/50 hover:bg-sky-400/20 transition text-sky-400 font-medium">API Docs</button>
+            <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
+               class="px-4 sm:px-5 py-2 rounded-full border border-white/10 hover:border-white/25 hover:bg-white/5 transition text-slate-300 font-medium flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                <span class="hidden sm:inline">Open Source</span>
+            </a>
+            <button onclick="openDocs()" class="px-4 sm:px-6 py-2 rounded-full bg-sky-500/10 border border-sky-400/40 hover:bg-sky-400/20 transition text-sky-300 font-medium text-sm">API Docs</button>
         </div>
     </nav>
 
+    <!-- Section dot navigator (multi-route style scrollspy) -->
+    <nav id="section-nav" class="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-30 flex-col gap-5">
+        <a href="#hero" data-section="hero" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Home</span>
+            <span class="section-dot" data-marker="hero"></span>
+        </a>
+        <a href="#why" data-section="why" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Why Auth-Pro</span>
+            <span class="section-dot" data-marker="why"></span>
+        </a>
+        <a href="#choose-path" data-section="choose-path" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Choose Path</span>
+            <span class="section-dot" data-marker="choose-path"></span>
+        </a>
+        <a href="#env-keys" data-section="env-keys" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Env Keys</span>
+            <span class="section-dot" data-marker="env-keys"></span>
+        </a>
+        <a href="#run-locally" data-section="run-locally" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Run Locally</span>
+            <span class="section-dot" data-marker="run-locally"></span>
+        </a>
+        <a href="#deploy" data-section="deploy" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Deploy</span>
+            <span class="section-dot" data-marker="deploy"></span>
+        </a>
+        <a href="#follow-path" data-section="follow-path" class="section-dot-row flex items-center justify-end gap-3">
+            <span class="section-dot-label glass px-3 py-1 rounded-full text-xs font-medium text-slate-200">Your Path</span>
+            <span class="section-dot" data-marker="follow-path"></span>
+        </a>
+    </nav>
+
+    <!-- Go to top -->
+    <button id="toTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+            class="fixed bottom-6 right-6 z-30 w-12 h-12 rounded-full glass flex items-center justify-center text-slate-300 hover:text-white hover:-translate-y-1 transition opacity-0 pointer-events-none translate-y-4"
+            aria-label="Go to top">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+    </button>
+
     <!-- Hero -->
-    <main class="flex-grow flex flex-col justify-center items-center px-4 text-center z-10 py-20">
-
-        <div class="f1 mb-8">
-            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-5 py-2 rounded-full text-sm font-semibold tracking-wide">
-                ✦ Open Source &nbsp;·&nbsp; Self-Hosted &nbsp;·&nbsp; Supabase Alternative
-            </span>
-        </div>
-
-        <h1 class="f2 text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight">
-            Your Own <span class="bg-gradient-to-r from-sky-400 to-blue-500 text-gradient">Auth, Mail</span><br/>
-            &amp; Storage — <span class="bg-gradient-to-r from-violet-400 to-purple-500 text-gradient">No Lock-in.</span>
-        </h1>
-
-        <p class="f3 text-lg md:text-xl text-slate-400 max-w-2xl mb-4 leading-relaxed">
-            Auth-Pro is an independent, self-hosted replacement for Supabase's auth, email, and storage features.
-            Use <strong class="text-slate-300">your own</strong> PostgreSQL database, <strong class="text-slate-300">your own</strong> SMTP provider,
-            and <strong class="text-slate-300">your own</strong> Cloudflare R2 bucket — with your own credentials for each.
-        </p>
-        <p class="f3 text-sm text-slate-500 max-w-xl mb-12">
-            No shared infrastructure. No vendor lock-in. No surprise billing. Full ownership of every layer.
-        </p>
-
-        <div class="f3 flex flex-wrap gap-4 justify-center mb-20">
-            <button onclick="openDocs()" class="px-8 py-3 rounded-full font-bold text-white transition-all hover:scale-105 glow" style="background:linear-gradient(135deg,#38bdf8,#3b82f6)">
-                View API Docs →
-            </button>
-            <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
-               class="px-8 py-3 rounded-full font-bold border border-slate-600 text-slate-300 hover:border-slate-400 hover:bg-white/5 transition-all hover:scale-105">
-                ⭐ Star on GitHub
-            </a>
-        </div>
-
-        <!-- Three Pillars -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full mb-16">
-            <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
-                <div class="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center mb-4 text-2xl">🔐</div>
-                <h3 class="text-xl font-bold mb-2 text-sky-300">Authentication</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">JWT-based signup, login, email verification, and password reset — all using <strong class="text-slate-300">your own PostgreSQL database</strong>. Your data, your server, your rules.</p>
+    <main class="flex-grow flex flex-col items-center px-4 text-center z-10">
+        <div id="hero" class="w-full flex flex-col items-center py-24 scroll-mt-24">
+            <div class="f1 mb-8">
+                <span class="glass inline-block px-4 sm:px-5 py-2 rounded-2xl sm:rounded-full text-xs sm:text-sm font-semibold tracking-wide text-emerald-300">
+                    ✦ Open Source &nbsp;·&nbsp; Self-Hosted &nbsp;·&nbsp; Beginner Friendly
+                </span>
             </div>
-            <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
-                <div class="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center mb-4 text-2xl">📧</div>
-                <h3 class="text-xl font-bold mb-2 text-violet-300">Email Delivery</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">Plug in <strong class="text-slate-300">any SMTP provider</strong> — Resend, SendGrid, Gmail SMTP, or your own mail server. Full control over every email template sent to your users.</p>
-            </div>
-            <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
-                <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4 text-2xl">🗄️</div>
-                <h3 class="text-xl font-bold mb-2 text-emerald-300">Media Storage</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">Avatars and image libraries stored in <strong class="text-slate-300">your own Cloudflare R2 bucket</strong>. Auto-compressed to WebP, tagged per user, served from your CDN.</p>
+
+            <h1 class="f2 text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight">
+                Your Own <span class="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 text-gradient">Auth, Mail</span><br/>
+                &amp; Storage: <span class="bg-gradient-to-r from-fuchsia-400 to-purple-500 text-gradient">No Lock-in.</span>
+            </h1>
+
+            <p class="f3 text-lg md:text-xl text-slate-400 max-w-2xl mb-4 leading-relaxed">
+                Auth-Pro is a ready-made backend for login, email, and file uploads: a self-hosted
+                replacement for Supabase's auth, email, and storage features. Skip building that
+                from scratch and get straight to your actual product.
+            </p>
+            <p class="f3 text-sm text-slate-500 max-w-xl mb-12">
+                Use <strong class="text-slate-300">your own</strong> PostgreSQL database, SMTP provider, and Cloudflare R2 bucket.
+                No shared infrastructure, no vendor lock-in, no surprise billing.
+            </p>
+
+            <div class="f3 flex flex-wrap gap-4 justify-center">
+                <a href="#choose-path" class="px-8 py-3 rounded-full font-bold text-white transition-all hover:scale-105 glow" style="background:linear-gradient(135deg,#22d3ee,#6366f1,#d946ef)">
+                    Get Started ↓
+                </a>
+                <button onclick="openDocs()" class="glass px-8 py-3 rounded-full font-bold text-slate-200 hover:text-white transition-all hover:scale-105">
+                    View API Docs
+                </button>
+                <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
+                   class="glass px-8 py-3 rounded-full font-bold text-slate-200 hover:text-white transition-all hover:scale-105">
+                    ⭐ Star on GitHub
+                </a>
             </div>
         </div>
 
-        <!-- vs Supabase -->
-        <div class="glass rounded-2xl p-8 max-w-3xl w-full text-left">
-            <h2 class="text-2xl font-bold mb-6 text-center">Why Auth-Pro over Supabase?</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                <div>
-                    <p class="text-slate-500 font-semibold mb-3 uppercase tracking-widest text-xs">Supabase</p>
-                    <ul class="space-y-2.5 text-slate-400">
-                        <li>❌ Vendor lock-in — data lives on their servers</li>
-                        <li>❌ Unpredictable pricing at scale</li>
-                        <li>❌ Limited email customization &amp; SMTP options</li>
-                        <li>❌ Storage tied to their buckets &amp; CDN</li>
-                        <li>❌ One account controls everything</li>
-                    </ul>
+        <!-- What is Auth-Pro / Why use it -->
+        <section id="why" class="w-full max-w-5xl mb-24 scroll-mt-24">
+            <div class="mb-10">
+                <span class="text-sky-400 text-xs font-bold uppercase tracking-widest">New here?</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">What Auth-Pro Actually Does</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+                    Almost every app needs the same three things: a way for users to sign up and log in,
+                    a way to email them, and a way to store their files. Auth-Pro is a small, self-hosted
+                    server that does all three: you deploy it once, plug in your own credentials, and
+                    get a working REST API back.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
+                    <div class="w-12 h-12 rounded-xl bg-sky-500/15 border border-sky-400/20 flex items-center justify-center mb-4 text-2xl">🔐</div>
+                    <h3 class="text-xl font-bold mb-2 text-sky-300">Authentication</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">JWT-based signup, login, email verification, and password reset: all using <strong class="text-slate-300">your own PostgreSQL database</strong>. Your data, your server, your rules.</p>
                 </div>
-                <div>
-                    <p class="text-emerald-400 font-semibold mb-3 uppercase tracking-widest text-xs">Auth-Pro</p>
-                    <ul class="space-y-2.5 text-slate-300">
-                        <li>✅ Your DB, your SMTP, your storage — independently</li>
-                        <li>✅ Predictable cost — pay for what you provision</li>
-                        <li>✅ Any SMTP provider, fully custom HTML emails</li>
-                        <li>✅ Your own Cloudflare R2 bucket &amp; CDN URL</li>
-                        <li>✅ Separate credentials for each service</li>
-                    </ul>
+                <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
+                    <div class="w-12 h-12 rounded-xl bg-fuchsia-500/15 border border-fuchsia-400/20 flex items-center justify-center mb-4 text-2xl">📧</div>
+                    <h3 class="text-xl font-bold mb-2 text-fuchsia-300">Email Delivery</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Plug in <strong class="text-slate-300">any SMTP provider</strong>: Resend, SendGrid, Gmail SMTP, or your own mail server. Full control over every email template sent to your users.</p>
+                </div>
+                <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-400/20 flex items-center justify-center mb-4 text-2xl">🗄️</div>
+                    <h3 class="text-xl font-bold mb-2 text-emerald-300">Media Storage</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Avatars and image libraries stored in <strong class="text-slate-300">your own Cloudflare R2 bucket</strong>. Auto-compressed to WebP, tagged per user, served from your CDN.</p>
                 </div>
             </div>
-        </div>
+
+            <!-- vs Supabase -->
+            <div class="glass rounded-2xl p-8 max-w-3xl mx-auto text-left">
+                <h2 class="text-2xl font-bold mb-6 text-center">Why Not Just Use Supabase or Firebase?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-slate-500 font-semibold mb-3 uppercase tracking-widest text-xs">Managed Platforms</p>
+                        <ul class="space-y-2.5 text-slate-400">
+                            <li>❌ Vendor lock-in, your data lives on their servers</li>
+                            <li>❌ Unpredictable pricing as you scale</li>
+                            <li>❌ Limited email customization &amp; SMTP options</li>
+                            <li>❌ Storage tied to their buckets &amp; CDN</li>
+                            <li>❌ One account controls everything</li>
+                        </ul>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-emerald-400 font-semibold mb-3 uppercase tracking-widest text-xs">Auth-Pro</p>
+                        <ul class="space-y-2.5 text-slate-300">
+                            <li>✅ Your DB, your SMTP, your storage: independent</li>
+                            <li>✅ Predictable cost: pay for what you provision</li>
+                            <li>✅ Any SMTP provider, fully custom HTML emails</li>
+                            <li>✅ Your own Cloudflare R2 bucket &amp; CDN URL</li>
+                            <li>✅ Separate, swappable credentials for each service</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Choose Your Path -->
+        <section id="choose-path" class="w-full max-w-5xl mb-24 scroll-mt-24">
+            <div class="mb-10">
+                <span class="text-violet-400 text-xs font-bold uppercase tracking-widest">Step 0</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">Choose Your Path</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+                    There are two ways people use Auth-Pro. Pick whichever matches what you're building:
+                    both start with the exact same setup steps below, and only diverge at the very end.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a href="#path-build" class="glass rounded-2xl p-8 text-left hover:-translate-y-2 transition duration-300 block relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1" style="background:linear-gradient(90deg,#38bdf8,#6366f1)"></div>
+                    <div class="w-12 h-12 rounded-xl bg-sky-500/15 border border-sky-400/20 flex items-center justify-center mb-4 text-2xl">🚀</div>
+                    <span class="text-sky-400 text-xs font-bold uppercase tracking-widest">Option 1</span>
+                    <h3 class="text-2xl font-bold mt-1 mb-3 text-sky-300">Build Your Project on Auth-Pro</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                        Clone the repo and use it as the <strong class="text-slate-300">foundation</strong> of your own backend.
+                        Auth, email, and storage are already solved: you just add your own API routes,
+                        database tables, and business logic on top.
+                    </p>
+                    <p class="text-xs text-slate-500 mb-4"><strong class="text-slate-400">Best for:</strong> starting a brand-new app or SaaS from scratch.</p>
+                    <span class="text-sky-400 font-semibold text-sm">Jump to setup ↓</span>
+                </a>
+
+                <a href="#path-service" class="glass rounded-2xl p-8 text-left hover:-translate-y-2 transition duration-300 block relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1" style="background:linear-gradient(90deg,#a78bfa,#e879f9)"></div>
+                    <div class="w-12 h-12 rounded-xl bg-violet-500/15 border border-violet-400/20 flex items-center justify-center mb-4 text-2xl">🔌</div>
+                    <span class="text-violet-400 text-xs font-bold uppercase tracking-widest">Option 2</span>
+                    <h3 class="text-2xl font-bold mt-1 mb-3 text-violet-300">Use Auth-Pro as a Standalone Service</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                        Deploy Auth-Pro <strong class="text-slate-300">unmodified</strong> and call its REST API from a
+                        completely separate frontend or backend, in any framework or language, exactly
+                        like you'd call Supabase Auth or Firebase.
+                    </p>
+                    <p class="text-xs text-slate-500 mb-4"><strong class="text-slate-400">Best for:</strong> adding auth/mail/storage to an existing project without touching its code.</p>
+                    <span class="text-violet-400 font-semibold text-sm">Jump to setup ↓</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Step 1: Env Keys -->
+        <section id="env-keys" class="w-full max-w-5xl mb-24 text-left scroll-mt-24">
+            <div class="mb-10 text-center">
+                <span class="text-amber-400 text-xs font-bold uppercase tracking-widest">Step 1 · Both Paths</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">Get Your Environment Keys</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+                    Whichever path you chose, you'll need these. Copy <code class="text-amber-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded">.env.example</code>
+                    to <code class="text-amber-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded">.env</code> in your cloned project, then work through each card below.
+                    Click <strong class="text-slate-300">Show Steps</strong> for exactly where to get each value:
+                    nothing here requires prior DevOps experience.
+                </p>
+                <p class="text-xs text-slate-500 max-w-2xl mx-auto mt-3">
+                    💡 Tip: once your app is running (locally or deployed), it also ships with a built-in
+                    <strong class="text-slate-400">Setup Dashboard</strong> at its root URL that shows you, live,
+                    which of these keys are still missing, so you can't get this step wrong for long.
+                </p>
+            </div>
+
+            <div class="space-y-10">
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><span>🗄️</span> Database <span class="text-xs font-normal text-slate-500 normal-case">· required</span></h3>
+                    <div class="space-y-3">
+                        <div class="glass rounded-xl overflow-hidden">
+                            <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                                <div class="flex-1 min-w-[220px]">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                        <code class="text-slate-100 font-mono font-bold text-sm">DATABASE_URL</code>
+                                        <span class="text-xs px-2.5 py-0.5 rounded-full border border-sky-500/30 text-sky-400 bg-sky-500/5">Required</span>
+                                    </div>
+                                    <p class="text-slate-400 text-sm leading-relaxed">The pooled Postgres connection string Prisma uses for normal queries.</p>
+                                </div>
+                                <button onclick="document.getElementById('steps-DATABASE_URL').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                            </div>
+                            <div id="steps-DATABASE_URL" class="hidden border-t border-white/10 bg-black/20 p-5">
+                                <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+                                    <li>Create a free project at <a href="https://neon.tech" target="_blank" class="text-sky-400 hover:underline">neon.tech</a> (or use any Postgres provider).</li>
+                                    <li>Open your project dashboard → <strong>Connection Details</strong>.</li>
+                                    <li>Copy the <strong>Pooled connection</strong> string.</li>
+                                </ol>
+                                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add this to your .env</div>
+                                <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">DATABASE_URL="postgresql://user:password@hostname/dbname?pgbouncer=true&amp;connect_timeout=15"</pre>
+                            </div>
+                        </div>
+                        <div class="glass rounded-xl overflow-hidden">
+                            <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                                <div class="flex-1 min-w-[220px]">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                        <code class="text-slate-100 font-mono font-bold text-sm">DIRECT_URL</code>
+                                        <span class="text-xs px-2.5 py-0.5 rounded-full border border-sky-500/30 text-sky-400 bg-sky-500/5">Required</span>
+                                    </div>
+                                    <p class="text-slate-400 text-sm leading-relaxed">The direct (non-pooled) connection string Prisma uses for migrations.</p>
+                                </div>
+                                <button onclick="document.getElementById('steps-DIRECT_URL').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                            </div>
+                            <div id="steps-DIRECT_URL" class="hidden border-t border-white/10 bg-black/20 p-5">
+                                <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+                                    <li>On the same Neon dashboard, switch to the <strong>Direct connection</strong> string.</li>
+                                    <li>Paste it as <code>DIRECT_URL</code>.</li>
+                                    <li>Once both URLs are set, run <code>npx prisma generate &amp;&amp; npx prisma db push</code> to create the tables.</li>
+                                </ol>
+                                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add this to your .env</div>
+                                <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">DIRECT_URL="postgresql://user:password@hostname/dbname?connect_timeout=15"</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><span>🔐</span> Authentication (JWT) <span class="text-xs font-normal text-slate-500 normal-case">· required</span></h3>
+                    <div class="space-y-3">
+                        <div class="glass rounded-xl overflow-hidden">
+                            <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                                <div class="flex-1 min-w-[220px]">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                        <code class="text-slate-100 font-mono font-bold text-sm">JWT_SECRET</code>
+                                        <span class="text-xs px-2.5 py-0.5 rounded-full border border-sky-500/30 text-sky-400 bg-sky-500/5">Required</span>
+                                    </div>
+                                    <p class="text-slate-400 text-sm leading-relaxed">Signs and verifies session tokens. Must be a long random string.</p>
+                                </div>
+                                <button onclick="document.getElementById('steps-JWT_SECRET').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                            </div>
+                            <div id="steps-JWT_SECRET" class="hidden border-t border-white/10 bg-black/20 p-5">
+                                <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+                                    <li>Run <code>openssl rand -base64 32</code> in your terminal (or use any long random string).</li>
+                                    <li>Copy the output and paste it as <code>JWT_SECRET</code>.</li>
+                                </ol>
+                                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add this to your .env</div>
+                                <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">JWT_SECRET="your-super-secret-jwt-key"</pre>
+                            </div>
+                        </div>
+                        <div class="glass rounded-xl overflow-hidden">
+                            <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                                <div class="flex-1 min-w-[220px]">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                        <code class="text-slate-100 font-mono font-bold text-sm">JWT_EXPIRES_IN</code>
+                                        <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-600/50 text-slate-400">Optional · default 1d</span>
+                                    </div>
+                                    <p class="text-slate-400 text-sm leading-relaxed">How long issued tokens remain valid, e.g. <code>1h</code>, <code>12h</code>, <code>7d</code>.</p>
+                                </div>
+                                <button onclick="document.getElementById('steps-JWT_EXPIRES_IN').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                            </div>
+                            <div id="steps-JWT_EXPIRES_IN" class="hidden border-t border-white/10 bg-black/20 p-5">
+                                <p class="text-sm text-slate-300 mb-4">Leave unset for a sensible 1-day default, or set your own duration string.</p>
+                                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add this to your .env</div>
+                                <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">JWT_EXPIRES_IN="1d"</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><span>☁️</span> File Storage (Cloudflare R2) <span class="text-xs font-normal text-slate-500 normal-case">· optional, powers avatars &amp; media</span></h3>
+                    <div class="glass rounded-xl overflow-hidden">
+                        <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                            <div class="flex-1 min-w-[220px]">
+                                <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <code class="text-slate-100 font-mono font-bold text-sm">R2_ACCOUNT_ID · R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY · R2_BUCKET_NAME · R2_PUBLIC_URL</code>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-600/50 text-slate-400">Optional</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">Five keys, one dashboard. Without these, avatar/media upload endpoints fail: the rest of the app works fine.</p>
+                            </div>
+                            <button onclick="document.getElementById('steps-R2').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                        </div>
+                        <div id="steps-R2" class="hidden border-t border-white/10 bg-black/20 p-5">
+                            <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+                                <li>Sign up at <a href="https://dash.cloudflare.com" target="_blank" class="text-sky-400 hover:underline">dash.cloudflare.com</a> and open the <strong>R2</strong> section.</li>
+                                <li>Create a bucket, its name is your <code>R2_BUCKET_NAME</code>.</li>
+                                <li>Copy your <strong>Account ID</strong> from the R2 overview page → <code>R2_ACCOUNT_ID</code>.</li>
+                                <li>Go to <strong>Manage R2 API Tokens</strong> → create a token with read/write access → copy the <strong>Access Key ID</strong> and <strong>Secret Access Key</strong> (shown once).</li>
+                                <li>Enable public access (or attach a custom domain) on the bucket → copy the public URL → <code>R2_PUBLIC_URL</code>.</li>
+                            </ol>
+                            <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add these to your .env</div>
+                            <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">R2_ACCOUNT_ID="your-cloudflare-account-id"
+R2_ACCESS_KEY_ID="your-r2-access-key-id"
+R2_SECRET_ACCESS_KEY="your-r2-secret-access-key"
+R2_BUCKET_NAME="your-r2-bucket-name"
+R2_PUBLIC_URL="https://your-r2-public-url.com"</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><span>📧</span> Email (SMTP) <span class="text-xs font-normal text-slate-500 normal-case">· optional, powers verification &amp; reset emails</span></h3>
+                    <div class="glass rounded-xl overflow-hidden">
+                        <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                            <div class="flex-1 min-w-[220px]">
+                                <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <code class="text-slate-100 font-mono font-bold text-sm">SMTP_HOST · SMTP_PORT · SMTP_USER · SMTP_PASS · SMTP_FROM</code>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-600/50 text-slate-400">Optional</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">Without these, signup/login still work: only verification and password-reset emails fail to send.</p>
+                            </div>
+                            <button onclick="document.getElementById('steps-SMTP').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                        </div>
+                        <div id="steps-SMTP" class="hidden border-t border-white/10 bg-black/20 p-5">
+                            <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+                                <li>Pick a transactional email provider: <a href="https://resend.com" target="_blank" class="text-sky-400 hover:underline">Resend</a>, SendGrid, AWS SES, or even Gmail (with an <strong>App Password</strong>) for testing.</li>
+                                <li>Copy the SMTP host and port they give you (<code>587</code> for STARTTLS, <code>465</code> for SSL).</li>
+                                <li>Copy your SMTP username and password/API key.</li>
+                                <li>Set a verified sender address for <code>SMTP_FROM</code>.</li>
+                            </ol>
+                            <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add these to your .env</div>
+                            <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_USER="your-smtp-username"
+SMTP_PASS="your-smtp-password"
+SMTP_FROM='"Auth-Pro" &lt;noreply@example.com&gt;'</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><span>🛡️</span> Admin Access <span class="text-xs font-normal text-slate-500 normal-case">· optional</span></h3>
+                    <div class="glass rounded-xl overflow-hidden">
+                        <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                            <div class="flex-1 min-w-[220px]">
+                                <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <code class="text-slate-100 font-mono font-bold text-sm">ADMIN_PASS</code>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-600/50 text-slate-400">Optional</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">Guards admin-only endpoints (ban user, send custom mail): no external service needed.</p>
+                            </div>
+                            <button onclick="document.getElementById('steps-ADMIN_PASS').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                        </div>
+                        <div id="steps-ADMIN_PASS" class="hidden border-t border-white/10 bg-black/20 p-5">
+                            <p class="text-sm text-slate-300 mb-4">Pick any strong password/string of your own choosing and set it below. Use that exact value in the <code>adminPass</code> field when calling admin-only endpoints. Never expose it in a public frontend.</p>
+                            <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add this to your .env</div>
+                            <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">ADMIN_PASS="your-custom-password"</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><span>⚙️</span> Application Settings <span class="text-xs font-normal text-slate-500 normal-case">· optional, safe defaults</span></h3>
+                    <div class="glass rounded-xl overflow-hidden">
+                        <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                            <div class="flex-1 min-w-[220px]">
+                                <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <code class="text-slate-100 font-mono font-bold text-sm">PORT · PRODUCTION · API_URL · FRONTEND_URL</code>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full border border-slate-600/50 text-slate-400">Optional</span>
+                                </div>
+                                <p class="text-slate-400 text-sm leading-relaxed">All four have safe defaults locally: <code>PORT=3000</code>, <code>PRODUCTION=false</code>, <code>API_URL=http://localhost:3000</code>. You'll update <code>API_URL</code> and <code>PRODUCTION</code> once you deploy.</p>
+                            </div>
+                            <button onclick="document.getElementById('steps-APP').classList.toggle('hidden')" class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">Show Steps</button>
+                        </div>
+                        <div id="steps-APP" class="hidden border-t border-white/10 bg-black/20 p-5">
+                            <ul class="list-disc list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+                                <li><code>PORT</code>: which port the server listens on. Leave unset unless your host requires a specific one.</li>
+                                <li><code>PRODUCTION</code>: set to <code>true</code> in a real deployment (disables the Swagger UI, tightens security). Leave <code>false</code> locally.</li>
+                                <li><code>API_URL</code>: the public base URL of your API, used to build links in emails. Set this to your deployed URL once you have one.</li>
+                                <li><code>FRONTEND_URL</code>: optional fallback if your frontend lives on a different domain than the API.</li>
+                            </ul>
+                            <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add these to your .env</div>
+                            <pre class="bg-black/40 text-emerald-300 font-mono text-xs p-3 rounded-lg border border-white/10 overflow-x-auto">PORT=3000
+PRODUCTION=false
+API_URL=http://localhost:3000</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Run Locally -->
+        <section id="run-locally" class="w-full max-w-4xl mb-24 text-left scroll-mt-24">
+            <div class="mb-10 text-center">
+                <span class="text-cyan-400 text-xs font-bold uppercase tracking-widest">Step 2 · Both Paths</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">Clone, Install &amp; Run It Locally</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+                    Do this before deploying anywhere: it's the fastest way to confirm everything is
+                    wired up correctly.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-cyan-500/15 border border-cyan-400/20 text-cyan-300">1</div>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="font-bold mb-1">Clone the repository</h4>
+                        <pre class="bg-black/40 rounded-lg p-3 font-mono text-xs text-sky-300 border border-white/10 overflow-x-auto mt-2">git clone https://github.com/ABDULAAQILKHAN/AUTH-PRO.git
+cd AUTH-PRO</pre>
+                    </div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-cyan-500/15 border border-cyan-400/20 text-cyan-300">2</div>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="font-bold mb-1">Install dependencies</h4>
+                        <pre class="bg-black/40 rounded-lg p-3 font-mono text-xs text-sky-300 border border-white/10 overflow-x-auto mt-2">npm install</pre>
+                        <p class="text-slate-500 text-xs mt-2">Uses <code>sharp</code> for image compression: install its system dependencies first if you hit build errors.</p>
+                    </div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-cyan-500/15 border border-cyan-400/20 text-cyan-300">3</div>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="font-bold mb-1">Add your environment keys</h4>
+                        <pre class="bg-black/40 rounded-lg p-3 font-mono text-xs text-sky-300 border border-white/10 overflow-x-auto mt-2">cp .env.example .env</pre>
+                        <p class="text-slate-500 text-xs mt-2">Fill in the values from <a href="#env-keys" class="text-sky-400 hover:underline">Step 1 above</a>.</p>
+                    </div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-cyan-500/15 border border-cyan-400/20 text-cyan-300">4</div>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="font-bold mb-1">Start the app</h4>
+                        <pre class="bg-black/40 rounded-lg p-3 font-mono text-xs text-sky-300 border border-white/10 overflow-x-auto mt-2">npx prisma generate &amp;&amp; npx prisma db push
+npm run start:dev</pre>
+                        <p class="text-slate-500 text-xs mt-2">Auth-Pro boots even with an incomplete <code>.env</code>. Open <code>http://localhost:3000</code>, you'll land on the built-in <strong class="text-slate-400">Setup Dashboard</strong>, which shows the live status of every key from Step 1 and re-checks itself every time you restart the server.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 3: Deploy -->
+        <section id="deploy" class="w-full max-w-4xl mb-24 text-left scroll-mt-24">
+            <div class="mb-10 text-center">
+                <span class="text-fuchsia-400 text-xs font-bold uppercase tracking-widest">Step 3 · Both Paths</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">Deploy It &amp; Get a Public URL</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+                    Auth-Pro ships with a <code class="text-amber-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded">Dockerfile</code>,
+                    so any container host works. Here's the walkthrough using
+                    <a href="https://northflank.com" target="_blank" class="text-sky-400 hover:underline">Northflank</a> as
+                    a concrete, beginner-friendly example.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">1</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Push your clone to your own GitHub repository</h4>
+                    <p class="text-slate-400 text-sm">Northflank deploys from a Git repo, so make sure your clone (with your changes, if any) is pushed there.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">2</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Create a Northflank account &amp; project</h4>
+                    <p class="text-slate-400 text-sm">Sign up at <a href="https://northflank.com" target="_blank" class="text-sky-400 hover:underline">northflank.com</a> (a free tier is available) and create a new Project.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">3</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Create a new Service from your repo</h4>
+                    <p class="text-slate-400 text-sm">Choose <strong>Create new service → Deployment → Import from Git repository</strong>, connect GitHub, and select your Auth-Pro repo and branch. Northflank auto-detects the <code>Dockerfile</code> at the repo root, so no extra build config is needed.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">4</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Add your environment variables</h4>
+                    <p class="text-slate-400 text-sm">In the service's <strong>Environment variables</strong> tab, add every key from your local <code>.env</code>, the exact same set from Step 1.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">5</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Expose the port</h4>
+                    <p class="text-slate-400 text-sm">Under <strong>Networking</strong>, add a public HTTP port pointing at <code>3000</code> (matching <code>PORT</code> and the Dockerfile's <code>EXPOSE 3000</code>) so Northflank issues you a public URL.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">6</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Deploy</h4>
+                    <p class="text-slate-400 text-sm">Click <strong>Deploy</strong>. Northflank builds your Docker image and starts the container: this takes a couple of minutes the first time.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">7</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Copy your generated URL</h4>
+                    <p class="text-slate-400 text-sm">Once live, Northflank gives you a public URL like <code class="text-amber-400">https://p01--auth-pro--xxxxxxxxxxxx.code.run</code>.</p></div>
+                </div>
+                <div class="glass rounded-xl p-6 flex gap-4">
+                    <div class="step-num bg-fuchsia-500/15 border border-fuchsia-400/20 text-fuchsia-300">8</div>
+                    <div class="min-w-0 flex-1"><h4 class="font-bold mb-1">Point Auth-Pro at its own URL</h4>
+                    <p class="text-slate-400 text-sm">Go back into the environment variables, set <code>API_URL</code> to that exact URL and <code>PRODUCTION=true</code>, then redeploy. Visit the URL, you'll see the live Setup Dashboard and <code>/docs</code> confirming everything is wired up.</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 4: Path-specific -->
+        <section id="follow-path" class="w-full max-w-5xl mb-24 text-left scroll-mt-24">
+            <div class="mb-10 text-center">
+                <span class="text-emerald-400 text-xs font-bold uppercase tracking-widest">Step 4 · This Is Where You Split</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">Now Follow Your Path</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div id="path-build" class="glass rounded-2xl p-8 scroll-mt-24 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1" style="background:linear-gradient(90deg,#38bdf8,#6366f1)"></div>
+                    <span class="text-sky-400 text-xs font-bold uppercase tracking-widest">🚀 Option 1</span>
+                    <h3 class="text-2xl font-bold mt-1 mb-4 text-sky-300">Building Your Own Project</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-5">You already have Auth-Pro cloned and deployed. Now make it yours:</p>
+                    <ol class="space-y-4 text-sm text-slate-300">
+                        <li class="flex gap-3"><span class="font-bold text-sky-400">1.</span><span><strong class="text-slate-200">Add your own tables:</strong> open <code>prisma/schema.prisma</code>, add new models below the existing <code>User</code>/<code>Media</code> models, then run <code>npx prisma generate &amp;&amp; npx prisma db push</code>.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-sky-400">2.</span><span><strong class="text-slate-200">Add your own API routes:</strong> create a new folder under <code>src/</code> (e.g. <code>src/posts/</code>) following the same module/controller/service pattern as <code>src/users/</code>, then register it in <code>src/app.module.ts</code>.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-sky-400">3.</span><span><strong class="text-slate-200">Protect your new routes:</strong> reuse the existing JWT guard with <code>@UseGuards(AuthGuard('jwt'))</code>, and read the logged-in user from <code>req.user</code> exactly like <code>UsersController</code> does.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-sky-400">4.</span><span><strong class="text-slate-200">Reuse the metadata field</strong> for anything custom: the existing <code>metadata</code> JSON field on <code>User</code> can store arbitrary per-user data via <code>PATCH /users/me</code> before you need a dedicated table.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-sky-400">5.</span><span><strong class="text-slate-200">Redeploy:</strong> push to GitHub. Northflank can auto-redeploy on every push, or trigger one manually from its dashboard.</span></li>
+                    </ol>
+                    <p class="text-xs text-slate-500 mt-5 pt-5 border-t border-white/10">Your new endpoints now live at the same base URL as Auth-Pro's built-in ones, one deployed service, one URL, your whole backend.</p>
+                </div>
+
+                <div id="path-service" class="glass rounded-2xl p-8 scroll-mt-24 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1" style="background:linear-gradient(90deg,#a78bfa,#e879f9)"></div>
+                    <span class="text-violet-400 text-xs font-bold uppercase tracking-widest">🔌 Option 2</span>
+                    <h3 class="text-2xl font-bold mt-1 mb-4 text-violet-300">Using It As a Standalone Service</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-5">You already have Auth-Pro deployed on its own URL. Now call it from your app:</p>
+                    <ol class="space-y-4 text-sm text-slate-300">
+                        <li class="flex gap-3"><span class="font-bold text-violet-400">1.</span><span><strong class="text-slate-200">Open <code>/docs</code></strong> on your deployed URL: the interactive API reference with ready-to-paste JavaScript for every endpoint.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-violet-400">2.</span><span><strong class="text-slate-200">Click "Copy AI Prompt"</strong> on that page and paste it into Claude, ChatGPT, or any AI along with a description of your app. It has everything needed to generate your whole frontend integration in one go.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-violet-400">3.</span><span><strong class="text-slate-200">CORS is already enabled:</strong> <code>main.ts</code> calls <code>app.enableCors()</code>, so your separate frontend (any framework, any domain) can call this URL directly from the browser, no extra config.</span></li>
+                        <li class="flex gap-3"><span class="font-bold text-violet-400">4.</span><span><strong class="text-slate-200">Treat it like Supabase or Firebase Auth:</strong> sign up/login from your app, store the returned <code>accessToken</code>, and attach it as <code>Authorization: Bearer &lt;token&gt;</code> on every protected request.</span></li>
+                    </ol>
+                    <p class="text-xs text-slate-500 mt-5 pt-5 border-t border-white/10">Your main project's codebase never needs to know Auth-Pro exists beyond a base URL and a bearer token.</p>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
@@ -160,7 +657,7 @@
 
     <!-- Docs Drawer -->
     <div id="docs-drawer">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(15,23,42,0.95);flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(5,8,20,0.95);flex-shrink:0;">
             <span style="font-weight:700;font-size:1rem;color:#7dd3fc;">API Documentation</span>
             <button onclick="closeDocs()" style="color:#94a3b8;background:rgba(255,255,255,0.05);border:none;cursor:pointer;padding:8px;border-radius:8px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -186,6 +683,35 @@
         }
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeDocs();
+        });
+
+        // Go to top button visibility
+        const toTopBtn = document.getElementById('toTopBtn');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 500) {
+                toTopBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            } else {
+                toTopBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }
+        }, { passive: true });
+
+        // Section scrollspy for the dot navigator
+        const sectionIds = ['hero', 'why', 'choose-path', 'env-keys', 'run-locally', 'deploy', 'follow-path'];
+        const markers = {};
+        sectionIds.forEach(id => {
+            markers[id] = document.querySelector(`.section-dot[data-marker="${id}"]`);
+        });
+        const spy = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    Object.values(markers).forEach(m => m && m.classList.remove('active'));
+                    markers[entry.target.id] && markers[entry.target.id].classList.add('active');
+                }
+            });
+        }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+        sectionIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) spy.observe(el);
         });
     </script>
 </body>

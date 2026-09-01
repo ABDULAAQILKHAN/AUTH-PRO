@@ -45,13 +45,19 @@ Auth-Pro is a robust, production-ready authentication, email, and storage micros
    ```
    *(Note: `sharp` is used for image compression. Ensure you have the appropriate system dependencies if you face installation issues on certain operating systems.)*
 
-3. **Configure Environment Variables:**
-   Copy `.env.example` to `.env` and configure your credentials.
+3. **Start the app and open the built-in Setup Dashboard:**
+   Auth-Pro boots fine even with an empty `.env` — you don't need to configure anything up front.
+   ```bash
+   npm run start:dev
+   ```
+   Then open **[http://localhost:3000](http://localhost:3000)** in your browser. The Setup Dashboard shows every environment variable the app uses, grouped by category, with a live "configured / missing / using default" status for each and an expandable step-by-step guide for obtaining each value.
+
+   Copy `.env.example` to `.env` and fill it in as you go, then restart the dev server — the dashboard updates automatically to reflect what's set.
    ```bash
    cp .env.example .env
    ```
-   
-   **Where to obtain your keys:**
+
+   **Reference: where to obtain each key** (same info as the dashboard, for offline reading):
    - **`DATABASE_URL` & `DIRECT_URL`**: Obtain your connection strings from your [Neon DB](https://neon.tech/) project dashboard.
    - **`JWT_SECRET`**: Generate a strong, random string (e.g., using `openssl rand -base64 32`).
    - **`R2_*` keys**: Create a bucket in your [Cloudflare Dashboard](https://dash.cloudflare.com/) under R2, and generate an API token to get your access keys.
@@ -59,9 +65,11 @@ Auth-Pro is a robust, production-ready authentication, email, and storage micros
    - **`ADMIN_PASS`**: Choose a secure custom password. This acts as a master key for admin-only endpoints.
    - **`PRODUCTION`**: Set this to `true` when deploying to a live server to enable production optimizations and security. Leave as `false` for local development.
    - **`API_URL`**: The base URL where your API is hosted (e.g., `http://localhost:3000` locally, or `https://api.yourdomain.com` in production). This is required for constructing absolute URLs in email templates and redirects.
+   - **`PORT`** *(optional)*: Which port the server listens on. Defaults to `3000`.
+   - **`FRONTEND_URL`** *(optional)*: Alternate base URL for email links if your frontend is hosted separately from the API.
 
-4. **Initialize Database:**
-   Generate the Prisma client and push the schema to your Neon DB (or local PostgreSQL).
+4. **Initialize the database:**
+   Generate the Prisma client and push the schema to your Neon DB (or local PostgreSQL) — this step still requires `DATABASE_URL`/`DIRECT_URL` to be set in `.env`.
    ```bash
    npx prisma generate
    npx prisma db push
@@ -206,7 +214,8 @@ Full HTTP round-trips through the real NestJS request pipeline with mocked exter
 
 | Endpoint group | Scenarios covered |
 |---|---|
-| `GET /` and `GET /docs` | HTML pages render correctly |
+| `GET /` | Setup Dashboard renders, shows live env var status |
+| `GET /docs` | API documentation page renders correctly |
 | `POST /auth/signup` | 201 success, 400 weak password, 400 duplicate email, 400 missing field |
 | `POST /auth/login` | 200 success, 401 wrong password, 401 unknown user, 401 banned user |
 | `POST /auth/forgot-password` | 200 always (enumeration-safe), reset email sent |
@@ -275,6 +284,7 @@ To build the Docker image and run the application inside a container:
 ## 📚 API Documentation
 
 Once the server is running, explore the API natively using our built-in interactive UI:
+- **Setup Dashboard:** [http://localhost:3000](http://localhost:3000)
 - **App Intro & Interactive Docs:** [http://localhost:3000/docs](http://localhost:3000/docs)
 - **Swagger UI:** [http://localhost:3000/api](http://localhost:3000/api)
 

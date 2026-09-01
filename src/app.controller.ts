@@ -1,9 +1,118 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { join } from 'path';
 import type { Response } from 'express';
+import { getAllEnvResults, getEnvSummary, ENV_GROUPS, EnvVarResult, EnvGroupDoc } from './config/env-guide';
 
 @Controller()
 export class AppController {
+  private esc(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  private sharedStyles(): string {
+    return `
+              body { font-family: 'Inter', sans-serif; background-color: #030712; color: #f1f5f9; }
+              .glass { background: linear-gradient(155deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07); }
+              .glass-nav { background: rgba(5,8,20,0.55); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.08); }
+              .text-gradient { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+              @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+              .float { animation: float 4s ease-in-out infinite; }
+              @keyframes drift { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(3%,4%) scale(1.08)} }
+              .drift { animation: drift 22s ease-in-out infinite; }
+              .drift-slow { animation: drift 30s ease-in-out infinite reverse; }
+              .glow { box-shadow: 0 0 50px rgba(34,211,238,0.35); }`;
+  }
+
+  private renderBlobs(): string {
+    return `
+          <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-500 rounded-full blur-[130px] opacity-20 pointer-events-none drift"></div>
+          <div class="fixed top-[20%] right-[-15%] w-[35%] h-[35%] bg-fuchsia-500 rounded-full blur-[130px] opacity-15 pointer-events-none drift-slow"></div>
+          <div class="fixed bottom-[10%] left-[-10%] w-[35%] h-[35%] bg-emerald-500 rounded-full blur-[130px] opacity-10 pointer-events-none drift"></div>
+          <div class="fixed bottom-[-15%] right-[-10%] w-[40%] h-[40%] bg-violet-500 rounded-full blur-[130px] opacity-15 pointer-events-none drift-slow"></div>`;
+  }
+
+  private renderNav(active: 'home' | 'docs', extraButtonHtml = ''): string {
+    const linkClasses = (isActive: boolean) =>
+      isActive
+        ? 'bg-white/10 text-white border border-white/10'
+        : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent';
+    const swaggerLink =
+      process.env.PRODUCTION !== 'true'
+        ? `<a href="/api" class="hidden md:inline-block px-4 py-2 rounded-full font-medium text-sm transition ${linkClasses(false)}">Swagger</a>`
+        : '';
+
+    return `
+          <nav class="w-full glass-nav z-20 px-4 sm:px-8 py-4 flex justify-between items-center sticky top-0">
+              <a href="/" class="flex items-center gap-3 group shrink-0">
+                  <img src="/icon.png" alt="Auth-Pro" class="w-10 h-10 rounded-lg shadow-lg shadow-sky-500/20 float">
+                  <span class="text-2xl font-bold bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 text-gradient">Auth-Pro</span>
+              </a>
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                  <a href="/" class="hidden sm:inline-block whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-medium text-sm transition ${linkClasses(active === 'home')}">Setup Dashboard</a>
+                  <a href="/docs" class="whitespace-nowrap px-2.5 sm:px-4 py-2 rounded-full font-medium text-sm transition ${linkClasses(active === 'docs')}">API Docs</a>
+                  ${swaggerLink}
+                  <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
+                     class="px-3 sm:px-4 py-2 rounded-full border border-white/10 hover:border-white/25 hover:bg-white/5 transition text-slate-300 font-medium flex items-center gap-2 text-sm">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                      <span class="hidden sm:inline">GitHub</span>
+                  </a>
+                  ${extraButtonHtml}
+              </div>
+          </nav>`;
+  }
+
+  private renderEnvCard(v: EnvVarResult): string {
+    const badge = {
+      configured: { classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: '✅ Configured' },
+      default: { classes: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20', label: '🟡 Using Default' },
+      missing: { classes: 'bg-red-500/10 text-red-300 border-red-500/20', label: '⚠️ Missing' },
+    }[v.status];
+
+    const stepsHtml = v.steps.map((s) => `<li>${this.esc(s)}</li>`).join('\n            ');
+
+    return `
+        <div class="glass rounded-2xl overflow-hidden">
+            <div class="p-5 flex flex-wrap items-start justify-between gap-4">
+                <div class="flex-1 min-w-[220px]">
+                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                        <code class="text-slate-100 font-mono font-bold text-sm">${v.key}</code>
+                        <span class="${badge.classes} border px-2.5 py-0.5 rounded-full text-xs font-semibold">${badge.label}</span>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full border ${v.required ? 'border-sky-500/30 text-sky-400 bg-sky-500/5' : 'border-slate-600/50 text-slate-400'}">${v.required ? 'Required' : 'Optional'}</span>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">${this.esc(v.description)}</p>
+                </div>
+                <button onclick="document.getElementById('steps-${v.key}').classList.toggle('hidden')"
+                        class="shrink-0 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-200 transition">
+                    Show Steps
+                </button>
+            </div>
+            <div id="steps-${v.key}" class="hidden border-t border-white/10 bg-slate-950/40 p-5">
+                <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-300 mb-4">
+            ${stepsHtml}
+                </ol>
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Add this to your .env</div>
+                <pre class="bg-[#0a0f1c] text-green-400 font-mono text-xs p-3 rounded-lg border border-slate-700/50 overflow-x-auto">${this.esc(v.exampleLine)}</pre>
+                ${v.hasCodeFallback ? `<p class="text-xs text-slate-500 mt-3">If left unset, defaults to: <code class="text-slate-400">${this.esc(v.defaultValue ?? '')}</code></p>` : ''}
+            </div>
+        </div>`;
+  }
+
+  private renderEnvGroup(group: EnvGroupDoc, results: EnvVarResult[]): string {
+    const byKey = new Map(results.map((r) => [r.key, r]));
+    const cardsHtml = group.vars
+      .map((key) => byKey.get(key))
+      .filter((v): v is EnvVarResult => Boolean(v))
+      .map((v) => this.renderEnvCard(v))
+      .join('\n');
+
+    return `
+        <section class="mb-12">
+            <h2 class="text-xl font-bold mb-5 flex items-center gap-2"><span>${group.icon}</span> ${this.esc(group.title)}</h2>
+            <div class="space-y-4">${cardsHtml}
+            </div>
+        </section>`;
+  }
+
   @Get('icon.png')
   getIcon(@Res() res: Response) {
     res.sendFile(join(__dirname, 'assets', 'icon.png'));
@@ -16,128 +125,53 @@ export class AppController {
 
   @Get()
   getHello(@Res() res: Response) {
+    const results = getAllEnvResults();
+    const summary = getEnvSummary();
+    const pct = summary.total > 0 ? Math.round((summary.configured / summary.total) * 100) : 0;
+    const groupsHtml = ENV_GROUPS.map((g) => this.renderEnvGroup(g, results)).join('\n');
+
     const html = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Auth-Pro | Self-Hosted Auth, Mail &amp; Storage</title>
-          <meta name="description" content="Auth-Pro is an open-source, self-hosted alternative to Supabase. Use your own database, SMTP, and Cloudflare R2 storage.">
+          <title>Auth-Pro | Setup Dashboard</title>
+          <meta name="description" content="Configure Auth-Pro: live status for every environment variable, plus step-by-step setup guides.">
           <link rel="icon" href="/favicon.ico">
           <script src="https://cdn.tailwindcss.com"></script>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-          <style>
-              body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
-              .glass { background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-              .text-gradient { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-              @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-              .float { animation: float 4s ease-in-out infinite; }
-              @keyframes fadein { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-              .f1{animation:fadein .7s ease both}
-              .f2{animation:fadein .7s .15s ease both}
-              .f3{animation:fadein .7s .3s ease both}
-              .glow{box-shadow:0 0 40px rgba(56,189,248,.2)}
+          <style>${this.sharedStyles()}
           </style>
       </head>
       <body class="min-h-screen flex flex-col relative overflow-x-hidden">
-          <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-          <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 rounded-full blur-[120px] opacity-15 pointer-events-none"></div>
+          ${this.renderBlobs()}
 
-          <!-- Navbar -->
-          <nav class="w-full glass z-10 px-8 py-4 flex justify-between items-center sticky top-0">
-              <div class="flex items-center gap-3">
-                  <img src="/icon.png" alt="Auth-Pro" class="w-10 h-10 rounded-lg shadow-lg shadow-sky-500/20 float">
-                  <span class="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-500 text-gradient">Auth-Pro</span>
-              </div>
-              <div class="flex items-center gap-3">
-                  <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
-                     class="px-5 py-2 rounded-full border border-slate-600/50 hover:border-slate-400/60 hover:bg-white/5 transition text-slate-300 font-medium flex items-center gap-2 text-sm">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-                      Open Source
-                  </a>
-                  <a href="/docs" class="px-6 py-2 rounded-full bg-sky-500/10 border border-sky-400/50 hover:bg-sky-400/20 transition text-sky-400 font-medium">API Docs</a>
-              </div>
-          </nav>
+          ${this.renderNav('home')}
 
-          <!-- Hero -->
-          <main class="flex-grow flex flex-col justify-center items-center px-4 text-center z-10 py-20">
-
-              <div class="f1 mb-8">
-                  <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-5 py-2 rounded-full text-sm font-semibold tracking-wide">
-                      ✦ Open Source &nbsp;·&nbsp; Self-Hosted &nbsp;·&nbsp; Supabase Alternative
-                  </span>
+          <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-14 z-10">
+              <div class="text-center mb-10">
+                  <span class="glass inline-block px-4 py-1.5 rounded-full text-sm font-semibold text-sky-300 tracking-wide uppercase">Setup Dashboard</span>
+                  <h1 class="text-4xl md:text-5xl font-bold mt-6 mb-4 tracking-tight">Get <span class="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 text-gradient">Auth-Pro</span> Running</h1>
+                  <p class="text-slate-400 max-w-2xl mx-auto leading-relaxed">Auth-Pro boots fine even with an empty <code class="text-amber-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">.env</code>. Fill in the values below: each card shows its live status and exact setup steps.</p>
               </div>
 
-              <h1 class="f2 text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight">
-                  Your Own <span class="bg-gradient-to-r from-sky-400 to-blue-500 text-gradient">Auth, Mail</span><br/>
-                  &amp; Storage — <span class="bg-gradient-to-r from-violet-400 to-purple-500 text-gradient">No Lock-in.</span>
-              </h1>
-
-              <p class="f3 text-lg md:text-xl text-slate-400 max-w-2xl mb-4 leading-relaxed">
-                  Auth-Pro is an independent, self-hosted replacement for Supabase's auth, email, and storage features.
-                  Use <strong class="text-slate-300">your own</strong> PostgreSQL database, <strong class="text-slate-300">your own</strong> SMTP provider,
-                  and <strong class="text-slate-300">your own</strong> Cloudflare R2 bucket — with your own credentials for each.
-              </p>
-              <p class="f3 text-sm text-slate-500 max-w-xl mb-12">
-                  No shared infrastructure. No vendor lock-in. No surprise billing. Full ownership of every layer.
-              </p>
-
-              <div class="f3 flex flex-wrap gap-4 justify-center mb-20">
-                  <a href="/docs" class="px-8 py-3 rounded-full font-bold text-white transition-all hover:scale-105 glow" style="background:linear-gradient(135deg,#38bdf8,#3b82f6)">
-                      View API Docs →
-                  </a>
-                  <a href="https://github.com/ABDULAAQILKHAN/AUTH-PRO" target="_blank"
-                     class="px-8 py-3 rounded-full font-bold border border-slate-600 text-slate-300 hover:border-slate-400 hover:bg-white/5 transition-all hover:scale-105">
-                      ⭐ Star on GitHub
-                  </a>
-              </div>
-
-              <!-- Three Pillars -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full mb-16">
-                  <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
-                      <div class="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center mb-4 text-2xl">🔐</div>
-                      <h3 class="text-xl font-bold mb-2 text-sky-300">Authentication</h3>
-                      <p class="text-slate-400 text-sm leading-relaxed">JWT-based signup, login, email verification, and password reset — all using <strong class="text-slate-300">your own PostgreSQL database</strong>. Your data, your server, your rules.</p>
+              <div class="glass rounded-2xl p-6 mb-12">
+                  <div class="flex justify-between items-center mb-3">
+                      <span class="font-semibold text-slate-200">${summary.configured} of ${summary.total} environment variables configured</span>
+                      <span class="text-sm text-slate-400">${pct}%</span>
                   </div>
-                  <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
-                      <div class="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center mb-4 text-2xl">📧</div>
-                      <h3 class="text-xl font-bold mb-2 text-violet-300">Email Delivery</h3>
-                      <p class="text-slate-400 text-sm leading-relaxed">Plug in <strong class="text-slate-300">any SMTP provider</strong> — Resend, SendGrid, Gmail SMTP, or your own mail server. Full control over every email template sent to your users.</p>
+                  <div class="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-emerald-400 rounded-full" style="width:${pct}%"></div>
                   </div>
-                  <div class="glass p-8 rounded-2xl text-left hover:-translate-y-2 transition duration-300">
-                      <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4 text-2xl">🗄️</div>
-                      <h3 class="text-xl font-bold mb-2 text-emerald-300">Media Storage</h3>
-                      <p class="text-slate-400 text-sm leading-relaxed">Avatars and image libraries stored in <strong class="text-slate-300">your own Cloudflare R2 bucket</strong>. Auto-compressed to WebP, tagged per user, served from your CDN.</p>
-                  </div>
+                  ${
+                    summary.missing > 0
+                      ? `<p class="text-xs text-amber-400 mt-3">⚠️ ${summary.missing} required variable(s) still missing — related features won't work until they're set.</p>`
+                      : `<p class="text-xs text-emerald-400 mt-3">✅ Everything required is configured.</p>`
+                  }
               </div>
 
-              <!-- vs Supabase -->
-              <div class="glass rounded-2xl p-8 max-w-3xl w-full text-left">
-                  <h2 class="text-2xl font-bold mb-6 text-center">Why Auth-Pro over Supabase?</h2>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                      <div>
-                          <p class="text-slate-500 font-semibold mb-3 uppercase tracking-widest text-xs">Supabase</p>
-                          <ul class="space-y-2.5 text-slate-400">
-                              <li>❌ Vendor lock-in — data lives on their servers</li>
-                              <li>❌ Unpredictable pricing at scale</li>
-                              <li>❌ Limited email customization &amp; SMTP options</li>
-                              <li>❌ Storage tied to their buckets &amp; CDN</li>
-                              <li>❌ One account controls everything</li>
-                          </ul>
-                      </div>
-                      <div>
-                          <p class="text-emerald-400 font-semibold mb-3 uppercase tracking-widest text-xs">Auth-Pro</p>
-                          <ul class="space-y-2.5 text-slate-300">
-                              <li>✅ Your DB, your SMTP, your storage — independently</li>
-                              <li>✅ Predictable cost — pay for what you provision</li>
-                              <li>✅ Any SMTP provider, fully custom HTML emails</li>
-                              <li>✅ Your own Cloudflare R2 bucket &amp; CDN URL</li>
-                              <li>✅ Separate credentials for each service</li>
-                          </ul>
-                      </div>
-                  </div>
-              </div>
+              ${groupsHtml}
           </main>
 
           <!-- Footer -->
@@ -146,6 +180,8 @@ export class AppController {
                   Built with ❤️ by <strong class="text-slate-200">Aaqil Khan</strong>
               </p>
               <div class="flex flex-wrap gap-5 justify-center">
+                  <a href="/docs" class="hover:text-sky-400 transition">📘 API Docs</a>
+                  <span class="text-slate-700">·</span>
                   <a href="https://solutions-with-aaqil.vercel.app/" target="_blank" class="hover:text-sky-400 transition">💼 B2B Solutions</a>
                   <span class="text-slate-700">·</span>
                   <a href="https://aaqilcodes.vercel.app/" target="_blank" class="hover:text-sky-400 transition">🌐 Personal Portfolio</a>
@@ -162,138 +198,122 @@ export class AppController {
   getDocs(@Res() res: Response) {
     const base = process.env.API_URL || 'http://localhost:3000';
 
-    const aiPrompt = `You are an expert AI coding assistant helping the user integrate Auth-Pro into their frontend application.
+    const aiPrompt = `You are an expert AI coding assistant helping the user integrate Auth-Pro into their frontend application. Auth-Pro is a self-hosted backend providing JWT authentication, transactional email, and file/media storage — all 15 endpoints below are already live and working, so just wire up the frontend calls exactly as specified.
 
 BASE URL: ${base}
 All requests use JSON bodies unless noted as multipart/form-data.
 Protected routes require the header:  Authorization: Bearer <accessToken>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 AUTH ENDPOINTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. POST /auth/signup
-   Body: {
-     email: string,           // required
-     password: string,        // required — min 8 chars, must include uppercase, lowercase, number & special char (@$!%*?&)
-     redirectUrl: string,     // required — your frontend page user lands on after clicking the verification email (no token appended)
-     metadata?: object        // optional — any JSON data to attach to the user (name, phone, plan, etc.)
-   }
-   Response: { accessToken: string }
-   Notes: User is immediately logged in via the returned token. Email is NOT verified yet.
-          The verification email link points to GET /auth/verify-email which then redirects to your redirectUrl.
+   Body: { email, password, redirectUrl, metadata? }  → { accessToken }
+   Notes: Logs the user in immediately (token is valid before email verification). Sends a
+          verification email whose link hits GET /auth/verify-email, which then redirects
+          the browser to your redirectUrl.
 
 2. POST /auth/login
-   Body: { email: string, password: string }
-   Response: { accessToken: string }
-   Notes: Store the token in localStorage. Use it for all protected requests.
-          Returns 401 if credentials are wrong or user is banned.
+   Body: { email, password }  → { accessToken }
+   Notes: Store the token and attach it to every protected request. Returns 401 for wrong
+          credentials or a banned user.
 
 3. POST /auth/forgot-password
-   Body: { email: string, redirectUrl: string }
-   Response: { message: string }
-   Notes: Sends a reset email. The link in the email hits GET /auth/reset-password which redirects to
-          YOUR redirectUrl with ?token=TOKEN appended. Then call POST /auth/update-password.
-          Response is always the same message regardless of whether email exists (prevents enumeration).
+   Body: { email, redirectUrl }  → { message }
+   Notes: Always returns the same message, whether or not the email exists (prevents
+          enumeration). Emails a link to GET /auth/reset-password, which redirects to YOUR
+          redirectUrl with ?token=TOKEN appended.
 
 4. POST /auth/update-password
-   Body: { token: string, newPassword: string }
-   Response: { message: string }
-   Notes: Use on your reset-password page. Extract token from URL:
-            const token = new URLSearchParams(window.location.search).get('token');
-          Tokens are single-use and expire. Returns 400 for invalid/expired tokens.
+   Body: { token, newPassword }  → { message }
+   Notes: Call from your reset-password page after reading token from the URL. Tokens are
+          single-use and expire — invalid/expired tokens return 400.
 
 5. GET /auth/verify-email?token=TOKEN&redirectUrl=URL
-   Notes: NOT called in code — the user clicks this link from their inbox.
-          Auth-Pro marks email as verified then redirects to your redirectUrl.
+   Notes: Not called from your code — this is the email link the user clicks. Marks the
+          email verified, then redirects to redirectUrl (or returns JSON if omitted).
 
 6. GET /auth/reset-password?token=TOKEN&redirectUrl=URL
-   Notes: NOT called in code — the user clicks this from the forgot-password email.
-          Auth-Pro appends the token to your redirectUrl and redirects.
+   Notes: Not called from your code — this is the forgot-password email link. Appends the
+          token to redirectUrl and redirects the browser there.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 USER ENDPOINTS  (require Authorization: Bearer <token>)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 7. GET /users/me
    Response: { id, email, avatarUrl, metadata, isEmailVerified, createdAt, updatedAt }
-   Notes: password is NEVER returned. Returns 401 if token is invalid/expired.
+   Notes: password is never returned. 401 if the token is missing/invalid/expired.
 
 8. PATCH /users/me
-   Body: { metadata?: object }
-   Response: updated UserEntity
-   Notes: DEEP MERGE — only keys you send are updated, existing keys are preserved.
-          To delete a key send it as null: { metadata: { keyToRemove: null } }
+   Body: { metadata?: object }  → updated user object
+   Notes: DEEP MERGE, not replace — only sent keys change. Delete a key by sending it as
+          null: { metadata: { keyToRemove: null } }
 
-9. POST /users/avatar    [multipart/form-data]
-   Form fields: file (required) — image file (JPG, PNG, WebP, etc.)
-   Response: updated UserEntity with new avatarUrl
-   Notes: Do NOT set Content-Type manually — FormData sets it automatically.
-          Image is auto-compressed to WebP. Use user.avatarUrl to display the result.
+9. POST /users/avatar   [multipart/form-data]
+   Form fields: file (required)  → updated user object with new avatarUrl
+   Notes: Do NOT set Content-Type manually — let FormData/fetch set it. Auto-compressed to
+          WebP and stored in cloud storage.
 
-10. POST /users/ban    [Admin — no JWT needed]
-    Body: { adminPass: string, userId: string }
-    Response: updated UserEntity
-    Notes: adminPass must match the ADMIN_PASS env variable. Never expose in a public frontend.
-           userId comes from GET /users/me (id field) or your database.
+10. POST /users/ban   [Admin — no JWT, uses adminPass instead]
+    Body: { adminPass, userId }  → updated user object
+    Notes: adminPass must equal the server's ADMIN_PASS env var. Get userId from
+           GET /users/me or your database. Only call from a secure server-side context —
+           never expose adminPass in a public frontend.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MAIL ENDPOINTS  (Admin — no JWT needed)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MAIL ENDPOINTS  (Admin — no JWT, uses adminPass instead)
 
 11. POST /mail/send-custom
-    Body: { adminPass: string, to: string, subject: string, htmlTemplate: string }
-    Response: { message: string }
-    Notes: Sends a fully custom HTML email. Use inline CSS for best email client compatibility.
-           adminPass must match ADMIN_PASS env variable.
+    Body: { adminPass, to, subject, htmlTemplate }  → { message }
+    Notes: htmlTemplate is raw HTML — use inline CSS (style="...") since most email clients
+           strip <style> tags, and absolute image URLs.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MEDIA ENDPOINTS  (require Authorization: Bearer <token>)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-12. POST /media/images    [multipart/form-data]
-    Form fields: file (required) — image file; tag (required) — category label (e.g. "blog-thumbnails")
-    Response: MediaEntity { id, url, tag, mimeType, size, filename, createdAt }
-    Notes: Builds a per-user media library. Different from /users/avatar (which is one profile picture).
-           Images are auto-compressed to WebP. Save the returned id if you need to delete later.
-           Do NOT set Content-Type manually.
+12. POST /media/images   [multipart/form-data]
+    Form fields: file (required), tag (required — category label)
+    Response: { id, url, tag, mimeType, size, filename, createdAt }
+    Notes: Builds a per-user media library (unlike /users/avatar, which is one profile
+           picture). Auto-compressed to WebP. Save id to delete later.
 
 13. GET /media?tag=OPTIONAL_TAG
-    Response: MediaEntity[]  (empty array if none found — not 404)
-    Notes: Returns all media for the user. Filter by tag with ?tag=your-tag.
+    Response: array of media objects (empty array if none — not 404)
+    Notes: Omit ?tag to list everything, or filter to one category.
 
 14. GET /media/:id
-    Response: MediaEntity
-    Notes: Returns a single file by ID. Only returns files owned by the authenticated user.
+    Response: single media object
+    Notes: Only returns files owned by the authenticated user — another user's file ID
+           returns 404, not 403, to avoid ID enumeration.
 
 15. DELETE /media/:id
-    Response: { message: "Media successfully deleted" }
-    Notes: PERMANENT — deletes from both database and cloud storage. Cannot be undone.
-           Only the owner can delete their own files.
+    Response: { message }
+    Notes: PERMANENT — removes the file from both the database and cloud storage. Only the
+           owner can delete it.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 KEY RULES & PATTERNS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Password strength: min 8 chars, must contain at least one uppercase letter, one lowercase letter,
-  one number, and one special character from: @$!%*?&
+Password strength: min 8 chars, at least one uppercase, one lowercase, one number, and one
+  special character from: @$!%*?&
 
-Token storage: store accessToken from login/signup in localStorage (or a secure cookie).
-  Attach to every protected request as:  Authorization: Bearer <token>
+Token storage: store accessToken from login/signup (localStorage or a secure cookie) and
+  attach it to every protected request as Authorization: Bearer <token>
 
-metadata field: free-form JSON object on each user. Use it to store anything you need — name,
-  phone, plan, preferences, onboarding state, etc. PATCH /users/me deep-merges updates.
+metadata field: free-form JSON per user — name, phone, plan, preferences, onboarding state,
+  etc. PATCH /users/me deep-merges every update.
 
 Email verification flow:
-  signup (with redirectUrl) → user gets email → clicks link → /auth/verify-email → redirects to your app
+  signup (with redirectUrl) → email sent → user clicks link → GET /auth/verify-email →
+  redirects to your redirectUrl
 
 Password reset flow:
-  forgot-password (with redirectUrl) → user gets email → clicks link → /auth/reset-password
-  → redirects to YOUR redirectUrl?token=TOKEN → your page reads token → update-password
+  forgot-password (with redirectUrl) → email sent → user clicks link →
+  GET /auth/reset-password → redirects to YOUR redirectUrl?token=TOKEN → your page reads
+  the token → POST /auth/update-password
 
-Admin authentication: endpoints /users/ban and /mail/send-custom use adminPass (not JWT).
-  adminPass must match the ADMIN_PASS environment variable on the server.
-`;
+Admin authentication: /users/ban and /mail/send-custom use an adminPass field instead of a
+  JWT — it must match the ADMIN_PASS environment variable. Never call these from a public
+  frontend.
+
+Error handling: expect 400 for validation errors, 401 for missing/invalid tokens or wrong
+  admin password, 404 for missing/not-owned resources. Avatar and media endpoints never
+  reveal another user's data via 403 — they return 404 instead.`;
 
     type Ep = {
       method: string; path: string; title: string; description: string;
@@ -313,20 +333,18 @@ Admin authentication: endpoints /users/ban and /mail/send-custom use adminPass (
   "email": "user@example.com",            // required
   "password": "MyP@ssword1",              // required — min 8 chars, must include uppercase,
                                           //   lowercase, number & special char (@$!%*?&)
-  "redirectUrl": "https://yourapp.com/dashboard", // required — your frontend page the user
-                                          //   lands on AFTER clicking the verification email link
-  "metadata": {                           // optional — any custom JSON data to attach to the user
+  "redirectUrl": "https://yourapp.com/dashboard", // required
+  "metadata": {                           // optional
     "name": "Aaqil khan",
     "phone": "+1234567890",
-    "plan": "free",
-    "referralCode": "ABC123"
+    "plan": "free"
   }
 }`,
         howToUse: `Call this on your signup form submission.<br><br>
 <strong>email</strong> and <strong>password</strong> are required. Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character (<code>@$!%*?&amp;</code>).<br><br>
-<strong>redirectUrl</strong> is the page on YOUR app that the user lands on after clicking the verification link in their email. Auth-Pro redirects there cleanly — no token is appended to this URL.<br><br>
+<strong>redirectUrl</strong> is the page on YOUR app that the user lands on after clicking the verification link. Auth-Pro redirects there cleanly — no token is appended.<br><br>
 <strong>metadata</strong> accepts any JSON object. Store name, phone, role, plan, or anything else you need. These fields can be updated later with <code>PATCH /users/me</code> and are deep-merged on every update.<br><br>
-The response returns an <code>accessToken</code> (JWT) immediately, so the user is logged in right away — even before verifying their email. Their <code>isEmailVerified</code> field will be <code>false</code> until they click the link.`,
+The response returns an <code>accessToken</code> (JWT) immediately — the user is logged in right away even before verifying their email.`,
         exampleCode: `fetch('${base}/auth/signup', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -342,7 +360,6 @@ The response returns an <code>accessToken</code> (JWT) immediately, so the user 
 })
 .then(res => res.json())
 .then(data => {
-  // Save the token — required for all protected routes
   localStorage.setItem('token', data.accessToken);
   console.log('Signed up successfully!');
 });`,
@@ -365,7 +382,7 @@ The response returns an <code>accessToken</code> (JWT) immediately, so the user 
 On success you receive <code>{ "accessToken": "eyJ..." }</code>. <strong>Store this token</strong> in <code>localStorage</code> or a secure cookie — you need it for every protected API call.<br><br>
 Attach it to protected requests via the header:<br>
 <code>Authorization: Bearer &lt;your-token&gt;</code><br><br>
-The token is a standard JWT. You can decode it client-side (e.g. using the <code>jwt-decode</code> library) to read the user's <code>userId</code> from the <code>sub</code> claim — no extra API call needed.<br><br>
+The token is a standard JWT. You can decode it client-side to read the user's <code>userId</code> from the <code>sub</code> claim.<br><br>
 Returns <strong>401 Unauthorized</strong> if the credentials are wrong or if the user has been banned.`,
         exampleCode: `fetch('${base}/auth/login', {
   method: 'POST',
@@ -380,7 +397,6 @@ Returns <strong>401 Unauthorized</strong> if the credentials are wrong or if the
   return res.json();
 })
 .then(data => {
-  // Save the token — needed for all protected routes
   localStorage.setItem('token', data.accessToken);
   window.location.href = '/dashboard';
 })
@@ -394,19 +410,17 @@ Returns <strong>401 Unauthorized</strong> if the credentials are wrong or if the
         auth: false, admin: false,
         payloadLabel: 'Request Body (JSON)',
         payload: `{
-  "email": "user@example.com",                         // required
-  "redirectUrl": "https://yourapp.com/reset-password"  // required — your frontend reset-password page
+  "email": "user@example.com",
+  "redirectUrl": "https://yourapp.com/reset-password"
 }
 
-// Response (always the same, regardless of whether the email exists):
+// Response (always the same regardless of whether email exists):
 // { "message": "If the email exists, a reset link has been sent." }`,
         howToUse: `Call this when the user clicks "Forgot Password?" on your login page.<br><br>
-Auth-Pro generates a short-lived reset token and emails the user a link pointing to:<br>
-<code>GET /auth/reset-password?token=TOKEN&amp;redirectUrl=YOUR_URL</code><br><br>
-That link redirects the user to YOUR <code>redirectUrl</code> with the token appended:<br>
+Auth-Pro generates a short-lived reset token and emails the user a link. That link redirects the user to YOUR <code>redirectUrl</code> with the token appended:<br>
 <code>https://yourapp.com/reset-password?token=abc123xyz</code><br><br>
 Your reset page must then:<br>
-1. Read <code>token</code> from the URL: <code>new URLSearchParams(window.location.search).get('token')</code><br>
+1. Read <code>token</code> from the URL<br>
 2. Show a "New Password" input<br>
 3. Call <code>POST /auth/update-password</code> with the token and new password<br><br>
 The response is always the same message — even if the email doesn't exist. This prevents email enumeration attacks.`,
@@ -415,15 +429,12 @@ The response is always the same message — even if the email doesn't exist. Thi
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     email: 'user@example.com',
-    // This is YOUR frontend reset page — the user will land here with ?token=...
     redirectUrl: 'https://yourapp.com/reset-password'
   })
 })
 .then(res => res.json())
 .then(data => {
-  // Always show this message regardless of whether email exists
   alert('Check your inbox for a password reset link!');
-  console.log(data.message);
 });`,
       },
 
@@ -434,27 +445,20 @@ The response is always the same message — even if the email doesn't exist. Thi
         auth: false, admin: false,
         payloadLabel: 'Request Body (JSON)',
         payload: `{
-  "token": "abc123xyz...",         // required — the token from your URL query param (?token=...)
-  "newPassword": "NewP@ssword1"    // required — same strength rules as signup:
-                                   //   min 8 chars, uppercase, lowercase, number, special char
+  "token": "abc123xyz...",
+  "newPassword": "NewP@ssword1"
 }
 
 // Response on success:
 // { "message": "Password successfully updated." }`,
-        howToUse: `Use this on your frontend reset-password page — the one you set as <code>redirectUrl</code> in the forgot-password call.<br><br>
+        howToUse: `Use this on your frontend reset-password page.<br><br>
 <strong>Step 1 — Extract the token on page load:</strong><br>
 <code>const token = new URLSearchParams(window.location.search).get('token');</code><br><br>
 <strong>Step 2 — Show a "New Password" input to the user.</strong><br><br>
 <strong>Step 3 — On form submit, call this endpoint</strong> with the token and new password.<br><br>
-Reset tokens are <strong>single-use and time-limited</strong> — once used or expired, this endpoint returns 400. On success, redirect the user to the login page. The new password must satisfy the same strength requirements as signup.`,
-        exampleCode: `// On your reset-password page, extract the token from the URL on load:
-const resetToken = new URLSearchParams(window.location.search).get('token');
+Reset tokens are <strong>single-use and time-limited</strong> — once used or expired, this endpoint returns 400. On success, redirect the user to the login page.`,
+        exampleCode: `const resetToken = new URLSearchParams(window.location.search).get('token');
 
-if (!resetToken) {
-  alert('Invalid or missing reset token.');
-}
-
-// On form submit:
 document.querySelector('#resetForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const newPassword = document.querySelector('#newPassword').value;
@@ -486,24 +490,25 @@ document.querySelector('#resetForm').addEventListener('submit', async (e) => {
 // The user clicks this link directly from their inbox.
 
 // Query Parameters:
-// token       (required) — the verification token (Auth-Pro adds it to the email link automatically)
-// redirectUrl (optional) — your frontend page to redirect to after successful verification
+// token       (required) — the verification token
+// redirectUrl (optional) — your frontend page to redirect to
 
 // Example link in the email:
-// ${base}/auth/verify-email?token=TOKEN&redirectUrl=https://yourapp.com/dashboard
+// ${base}/auth/verify-email
+//   ?token=TOKEN&redirectUrl=https://yourapp.com/dashboard
 
 // If redirectUrl is provided  → redirects the user to that URL
 // If redirectUrl is omitted   → returns JSON: { "message": "Email successfully verified." }
 // If token is invalid/expired → returns 400`,
         howToUse: `<strong>You don't call this endpoint in your code.</strong> It is the destination of the email verification link that Auth-Pro automatically sends when a user signs up.<br><br>
 The full flow:<br>
-1. User signs up via <code>POST /auth/signup</code> — you pass a <code>redirectUrl</code> in the body<br>
+1. User signs up via <code>POST /auth/signup</code> — you pass a <code>redirectUrl</code><br>
 2. Auth-Pro sends the user a verification email with a link pointing to this endpoint<br>
-3. User clicks the link — Auth-Pro marks their email as verified (<code>isEmailVerified = true</code>)<br>
-4. Auth-Pro redirects the user to your <code>redirectUrl</code> (e.g. your dashboard)<br><br>
-To control where the user lands after verification, set the <code>redirectUrl</code> field correctly during signup. Make sure it points to a real page in your app.`,
+3. User clicks the link — Auth-Pro marks their email as verified<br>
+4. Auth-Pro redirects the user to your <code>redirectUrl</code><br><br>
+To control where the user lands after verification, set the <code>redirectUrl</code> correctly during signup.`,
         exampleCode: `// You don't call this endpoint directly.
-// Just make sure you pass the correct redirectUrl during signup:
+// Just pass the correct redirectUrl during signup:
 
 fetch('${base}/auth/signup', {
   method: 'POST',
@@ -515,10 +520,7 @@ fetch('${base}/auth/signup', {
     redirectUrl: 'https://yourapp.com/dashboard',
     metadata: { name: 'Alice' }
   })
-});
-
-// The verification email link will look like:
-// ${base}/auth/verify-email?token=TOKEN&redirectUrl=https://yourapp.com/dashboard`,
+});`,
       },
 
       {
@@ -531,11 +533,8 @@ fetch('${base}/auth/signup', {
 // The user clicks this link directly from their inbox.
 
 // Query Parameters:
-// token       (required) — the reset token (Auth-Pro adds it automatically)
+// token       (required) — the reset token
 // redirectUrl (optional) — your frontend reset-password page
-
-// Example link in the email:
-// ${base}/auth/reset-password?token=TOKEN&redirectUrl=https://yourapp.com/reset-password
 
 // What happens:
 // Auth-Pro redirects the user to:
@@ -545,7 +544,7 @@ fetch('${base}/auth/signup', {
 Example: if your <code>redirectUrl</code> is <code>https://yourapp.com/reset-password</code>, the user lands on:<br>
 <code>https://yourapp.com/reset-password?token=abc123xyz</code><br><br>
 Your page then extracts the token from the URL and calls <code>POST /auth/update-password</code>.<br><br>
-If no <code>redirectUrl</code> is given, the endpoint returns JSON with the token instead of redirecting. Always set the redirectUrl in your forgot-password call.`,
+Always set the redirectUrl in your forgot-password call.`,
         exampleCode: `// You don't call this endpoint directly.
 // Set up the flow correctly in your forgot-password call:
 
@@ -554,14 +553,13 @@ fetch('${base}/auth/forgot-password', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     email: 'user@example.com',
-    // The user clicks the email link and lands on this page with ?token=TOKEN appended:
     redirectUrl: 'https://yourapp.com/reset-password'
   })
 });
 
 // Then on your /reset-password page:
 const token = new URLSearchParams(window.location.search).get('token');
-// Pass this token to POST /auth/update-password (see that endpoint's example)`,
+// Pass this token to POST /auth/update-password`,
       },
 
       {
@@ -578,51 +576,37 @@ const token = new URLSearchParams(window.location.search).get('token');
 {
   "id": "clx9ab12cd34ef56",
   "email": "user@example.com",
-  "avatarUrl": "https://cdn.example.com/avatars/abc.webp", // null if not set
-  "metadata": {                                              // null if not set
-    "name": "Aaqil khan",
-    "plan": "pro"
-  },
+  "avatarUrl": "https://cdn.example.com/avatars/abc.webp",
+  "metadata": { "name": "Aaqil khan", "plan": "pro" },
   "isEmailVerified": true,
   "createdAt": "2025-01-01T00:00:00.000Z",
   "updatedAt": "2025-06-01T12:00:00.000Z"
   // "password" is NEVER returned
 }`,
         howToUse: `Call this on any page that needs user data — your dashboard, settings page, profile page, etc.<br><br>
-Attach the JWT from login/signup in the <code>Authorization</code> header as a Bearer token.<br><br>
 The response includes:<br>
 • <strong>id</strong> — unique user ID (needed for admin operations like ban)<br>
 • <strong>email</strong> — the user's email address<br>
-• <strong>avatarUrl</strong> — cloud CDN URL of their profile picture (<code>null</code> if no avatar set)<br>
+• <strong>avatarUrl</strong> — cloud CDN URL of their profile picture (<code>null</code> if not set)<br>
 • <strong>metadata</strong> — any custom JSON you stored (<code>null</code> if nothing stored yet)<br>
-• <strong>isEmailVerified</strong> — whether the user has clicked their verification email link<br>
-• <strong>createdAt / updatedAt</strong> — account timestamps<br><br>
+• <strong>isEmailVerified</strong> — whether the user has clicked their verification email link<br><br>
 The <code>password</code> field is <strong>never</strong> returned. Returns <strong>401</strong> if the token is missing, invalid, or expired.`,
         exampleCode: `const token = localStorage.getItem('token');
 
 fetch('${base}/users/me', {
-  method: 'GET',
-  headers: {
-    'Authorization': \`Bearer \${token}\`
-  }
+  headers: { 'Authorization': \`Bearer \${token}\` }
 })
 .then(res => {
   if (res.status === 401) throw new Error('Not authenticated');
   return res.json();
 })
 .then(user => {
-  console.log('ID:', user.id);
   console.log('Email:', user.email);
-  console.log('Email verified:', user.isEmailVerified);
-  console.log('Avatar:', user.avatarUrl ?? 'No avatar set');
-  console.log('Custom data:', user.metadata);
-
-  // Example: show avatar in your UI
+  console.log('Verified:', user.isEmailVerified);
   if (user.avatarUrl) {
     document.querySelector('#avatar').src = user.avatarUrl;
   }
-})
-.catch(err => console.error(err.message));`,
+});`,
       },
 
       {
@@ -631,32 +615,24 @@ fetch('${base}/users/me', {
         description: 'Deep-merges custom metadata into the user\'s profile. Only keys you send are updated — all existing metadata is preserved.',
         auth: true, admin: false,
         payloadLabel: 'Request Body (JSON)',
-        payload: `// Required Header:
-// Authorization: Bearer YOUR_JWT_TOKEN
-
-// Request Body:
-{
-  "metadata": {              // optional key — any JSON object
-    "displayName": "Alice",  // add or update any field
+        payload: `{
+  "metadata": {
+    "displayName": "Alice",
     "theme": "dark",
-    "newsletterOptIn": true,
-    "address": "123 Main St",
-    "onboardingStep": 3,
-    "customRole": "editor"
+    "onboardingStep": 3
   }
 }
 
 // IMPORTANT: This is a MERGE, not a replace.
-// Keys not included in your payload are preserved as-is.
-// To delete a key, send it as null: { "metadata": { "oldKey": null } }`,
+// To delete a key, send it as null:
+// { "metadata": { "oldKey": null } }`,
         howToUse: `Use this to save any custom user-level data — UI preferences, settings, onboarding state, plan details, etc.<br><br>
-<strong>Merge behaviour:</strong> The server deep-merges your payload into existing metadata. If the user already has <code>metadata.theme = "light"</code> and you send <code>{ "metadata": { "theme": "dark" } }</code>, only <code>theme</code> changes. All other metadata keys are untouched.<br><br>
-<strong>Deleting a key:</strong> Send the key with a <code>null</code> value to remove it:<br>
+<strong>Merge behaviour:</strong> The server deep-merges your payload into existing metadata. Keys not included in your payload are untouched.<br><br>
+<strong>Deleting a key:</strong> Send the key with a <code>null</code> value:<br>
 <code>{ "metadata": { "keyToRemove": null } }</code><br><br>
-You can store nested objects inside metadata. Returns the full updated user object on success. Requires a valid JWT in the Authorization header. Returns 401 if unauthenticated.`,
+Returns the full updated user object on success. Returns 401 if unauthenticated.`,
         exampleCode: `const token = localStorage.getItem('token');
 
-// Example: User changed their theme preference
 fetch('${base}/users/me', {
   method: 'PATCH',
   headers: {
@@ -668,15 +644,11 @@ fetch('${base}/users/me', {
       theme: 'dark',
       displayName: 'Alice',
       onboardingComplete: true
-      // Other existing metadata fields (e.g. phone, plan) are preserved
     }
   })
 })
 .then(res => res.json())
-.then(user => {
-  console.log('Updated metadata:', user.metadata);
-  console.log('Theme is now:', user.metadata.theme);
-});`,
+.then(user => console.log('Updated metadata:', user.metadata));`,
       },
 
       {
@@ -685,23 +657,16 @@ fetch('${base}/users/me', {
         description: 'Uploads a profile image for the authenticated user. Automatically compressed to WebP and stored in cloud storage.',
         auth: true, admin: false,
         payloadLabel: 'Multipart Form Data',
-        payload: `// Required Header:
-// Authorization: Bearer YOUR_JWT_TOKEN
-// Content-Type: multipart/form-data  ← set AUTOMATICALLY by the browser/fetch, do NOT set it manually
+        payload: `// Authorization: Bearer YOUR_JWT_TOKEN
+// Content-Type: multipart/form-data ← set AUTOMATICALLY, do NOT set manually
 
 // Form Fields:
-// file — (required) the image file (JPG, PNG, WebP, GIF, etc.)
+// file — (required) the image file (JPG, PNG, WebP, etc.)
 
-// Response: full UserEntity with updated avatarUrl field
-// { "avatarUrl": "https://cdn.example.com/avatars/uuid.webp", ...rest of user }
-
-// Note: Do NOT manually set Content-Type when using FormData.
-// The browser sets it automatically with the correct multipart boundary.
-// Setting it manually will break the upload.`,
-        howToUse: `Use an HTML <code>&lt;input type="file" accept="image/*"&gt;</code> element to let the user pick an image. Build a <code>FormData</code> object and append the file under the key <code>"file"</code>.<br><br>
-<strong>Critical:</strong> Do NOT set <code>Content-Type</code> manually in the headers. The browser adds it automatically with the correct multipart boundary string. If you set it manually, the server cannot parse the file.<br><br>
-The image is automatically compressed and converted to <strong>WebP format</strong> before being saved to cloud storage. After a successful upload, the response contains the updated user object with the new <code>avatarUrl</code>.<br><br>
-Use <code>user.avatarUrl</code> as the <code>src</code> of an <code>&lt;img&gt;</code> tag to display the avatar in your UI.`,
+// Response: full UserEntity with updated avatarUrl field`,
+        howToUse: `Use an HTML <code>&lt;input type="file" accept="image/*"&gt;</code> to let the user pick an image. Build a <code>FormData</code> object and append the file under the key <code>"file"</code>.<br><br>
+<strong>Critical:</strong> Do NOT set <code>Content-Type</code> manually. The browser adds it automatically with the correct multipart boundary string.<br><br>
+The image is automatically compressed and converted to <strong>WebP format</strong> before being saved to cloud storage. Use <code>user.avatarUrl</code> as the <code>src</code> of an <code>&lt;img&gt;</code> tag to display the avatar.`,
         exampleCode: `const token = localStorage.getItem('token');
 const fileInput = document.querySelector('#avatarInput');
 
@@ -710,21 +675,18 @@ fileInput.addEventListener('change', async () => {
   if (!file) return;
 
   const formData = new FormData();
-  formData.append('file', file); // field name MUST be exactly "file"
+  formData.append('file', file); // field name MUST be "file"
 
   const res = await fetch('${base}/users/avatar', {
     method: 'POST',
     headers: {
       'Authorization': \`Bearer \${token}\`
-      // DO NOT add Content-Type here — FormData sets it automatically!
+      // DO NOT add Content-Type here!
     },
     body: formData
   });
 
   const user = await res.json();
-  console.log('New avatar URL:', user.avatarUrl);
-
-  // Update the avatar image in your UI:
   document.querySelector('#avatarImg').src = user.avatarUrl;
 });`,
       },
@@ -736,39 +698,30 @@ fileInput.addEventListener('change', async () => {
         auth: false, admin: true,
         payloadLabel: 'Request Body (JSON)',
         payload: `{
-  "adminPass": "your-admin-password",  // required — must match the ADMIN_PASS env variable on the server
-  "userId": "clx9ab12cd34ef56gh78"     // required — the unique ID of the user to ban
-                                       //   (get it from GET /users/me or your database)
+  "adminPass": "your-admin-password",
+  "userId": "clx9ab12cd34ef56gh78"
 }
 
-// Response: the updated UserEntity with isEmailVerified set to false (ban mechanism)
 // Returns 401 if adminPass is wrong
 // Returns 404 if userId does not exist`,
-        howToUse: `Admin-only endpoint — <strong>no JWT required</strong>. Authentication is done via the <code>adminPass</code> field, which must match the <code>ADMIN_PASS</code> environment variable set on the server.<br><br>
-To get a user's <code>userId</code>, either call <code>GET /users/me</code> while authenticated as that user, or look it up directly in your database.<br><br>
-Banning works by setting <code>isEmailVerified = false</code>, which prevents the user from logging in.<br><br>
-Returns <strong>401</strong> if the admin password doesn't match, and <strong>404</strong> if the user ID doesn't exist.<br><br>
-<strong>Security:</strong> Never expose this endpoint or the <code>adminPass</code> in a public frontend. Only call it from a secure server-side admin panel or CLI tool.`,
-        exampleCode: `// Admin-only action — run from a secure server-side context, NEVER from a public frontend!
+        howToUse: `Admin-only endpoint — <strong>no JWT required</strong>. Authentication is done via the <code>adminPass</code> field, which must match the <code>ADMIN_PASS</code> environment variable on the server.<br><br>
+To get a user's <code>userId</code>, call <code>GET /users/me</code> while authenticated as that user, or look it up in your database.<br><br>
+<strong>Security:</strong> Never expose this endpoint or <code>adminPass</code> in a public frontend. Only call it from a secure server-side admin panel or CLI tool.`,
+        exampleCode: `// Admin-only — run from a secure server-side context!
 
 fetch('${base}/users/ban', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    adminPass: 'your-admin-password', // from ADMIN_PASS env var — keep this secret!
-    userId: 'clx9ab12cd34ef56gh78'    // the ID of the user to ban
+    adminPass: 'your-admin-password',
+    userId: 'clx9ab12cd34ef56gh78'
   })
 })
 .then(res => res.json())
 .then(data => {
-  if (data.statusCode === 401) {
-    console.error('Wrong admin password!');
-  } else if (data.statusCode === 404) {
-    console.error('User not found!');
-  } else {
-    console.log('User banned successfully:', data.id);
-    console.log('isEmailVerified is now:', data.isEmailVerified); // false
-  }
+  if (data.statusCode === 401) console.error('Wrong admin password!');
+  else if (data.statusCode === 404) console.error('User not found!');
+  else console.log('User banned:', data.id);
 });`,
       },
 
@@ -779,25 +732,21 @@ fetch('${base}/users/ban', {
         auth: false, admin: true,
         payloadLabel: 'Request Body (JSON)',
         payload: `{
-  "adminPass": "your-admin-password",           // required — must match ADMIN_PASS env variable
-  "to": "recipient@example.com",                // required — the recipient's email address
-  "subject": "Welcome to Our Platform!",        // required — the email subject line
-  "htmlTemplate": "<h1>Hello!</h1><p>...</p>"   // required — full HTML body of the email
-                                                //   Use inline CSS for best email client compatibility
+  "adminPass": "your-admin-password",
+  "to": "recipient@example.com",
+  "subject": "Welcome to Our Platform!",
+  "htmlTemplate": "<h1>Hello!</h1><p>...</p>"
 }
 
 // Response on success:
 // { "message": "Email successfully sent." }`,
-        howToUse: `Admin-only endpoint — no JWT required. Authentication uses <code>adminPass</code> matched against the <code>ADMIN_PASS</code> env variable.<br><br>
+        howToUse: `Admin-only endpoint — no JWT required.<br><br>
 The <code>htmlTemplate</code> field accepts complete HTML. Tips for best email client compatibility:<br>
 • Use <strong>inline CSS</strong> (<code>style="..."</code> attributes) — most email clients strip external <code>&lt;style&gt;</code> tags<br>
 • Use table-based layouts for complex designs<br>
-• Keep image src URLs absolute (full URL, not relative paths)<br><br>
-<strong>Use cases:</strong> Onboarding emails, product announcements, custom transactional notifications, one-off emails to specific users.<br><br>
-Returns <code>{ "message": "Email successfully sent." }</code> on success. Returns 401 if the admin password is wrong.`,
-        exampleCode: `// Admin-only — call from a secure server-side context
-
-fetch('${base}/mail/send-custom', {
+• Keep image src URLs absolute<br><br>
+Returns 401 if the admin password is wrong.`,
+        exampleCode: `fetch('${base}/mail/send-custom', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -805,16 +754,12 @@ fetch('${base}/mail/send-custom', {
     to: 'newuser@example.com',
     subject: 'Welcome to Our Platform!',
     htmlTemplate: \`
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <h1 style="color: #3b82f6;">Welcome aboard!</h1>
-        <p style="color: #374151;">Your account is ready. Here are your next steps:</p>
-        <ul style="color: #374151;">
-          <li>Complete your profile</li>
-          <li>Explore the dashboard</li>
-        </ul>
+      <div style="font-family:Arial,sans-serif;max-width:600px;padding:24px">
+        <h1 style="color:#3b82f6">Welcome aboard!</h1>
+        <p>Your account is ready.</p>
         <a href="https://yourapp.com/dashboard"
-           style="display:inline-block;background:#3b82f6;color:#fff;padding:12px 24px;
-                  text-decoration:none;border-radius:6px;margin-top:16px;">
+           style="display:inline-block;background:#3b82f6;color:#fff;
+                  padding:12px 24px;text-decoration:none;border-radius:6px">
           Go to Dashboard
         </a>
       </div>
@@ -822,7 +767,7 @@ fetch('${base}/mail/send-custom', {
   })
 })
 .then(res => res.json())
-.then(data => console.log(data.message)); // "Email successfully sent."`,
+.then(data => console.log(data.message));`,
       },
 
       {
@@ -831,14 +776,12 @@ fetch('${base}/mail/send-custom', {
         description: 'Uploads and compresses an image into the user\'s personal media library with a required tag for categorization.',
         auth: true, admin: false,
         payloadLabel: 'Multipart Form Data',
-        payload: `// Required Header:
-// Authorization: Bearer YOUR_JWT_TOKEN
-// Content-Type: multipart/form-data  ← set automatically, do NOT set manually
+        payload: `// Authorization: Bearer YOUR_JWT_TOKEN
+// Content-Type: set automatically by FormData
 
 // Form Fields:
-// file — (required) the image file (JPG, PNG, WebP, GIF, etc.)
-// tag  — (required) a string label to categorize this image
-//         e.g. "blog-thumbnails", "project-alpha", "product-shots", "gallery"
+// file — (required) the image file
+// tag  — (required) category label e.g. "blog-thumbnails"
 
 // Response (MediaEntity):
 {
@@ -846,49 +789,33 @@ fetch('${base}/mail/send-custom', {
   "url": "https://cdn.example.com/media/images/uuid.webp",
   "tag": "blog-thumbnails",
   "mimeType": "image/webp",
-  "size": 45312,            // size in bytes after WebP compression
+  "size": 45312,
   "filename": "media/images/uuid.webp",
   "createdAt": "2025-06-01T00:00:00.000Z"
 }`,
-        howToUse: `This is different from <code>POST /users/avatar</code> — that endpoint sets a single profile picture. This endpoint builds a <strong>full media library</strong> with multiple organized files per user.<br><br>
-The <code>tag</code> field is required and is how you group and retrieve images later. For example:<br>
+        howToUse: `This is different from <code>POST /users/avatar</code> — that sets one profile picture. This builds a <strong>full media library</strong> with multiple organized files per user.<br><br>
+The <code>tag</code> field is required and is how you group and retrieve images later:<br>
 • <code>"blog-thumbnails"</code> for article cover images<br>
-• <code>"project-alpha"</code> for project-specific assets<br>
-• <code>"gallery"</code> for user-uploaded photos<br><br>
-Retrieve all files with a specific tag using <code>GET /media?tag=your-tag</code>.<br><br>
-The image is compressed to <strong>WebP</strong> automatically. The response <code>MediaEntity</code> includes the public CDN <code>url</code> and the file's <code>id</code> — save the <code>id</code> if you need to delete it later.`,
+• <code>"project-alpha"</code> for project-specific assets<br><br>
+The image is compressed to <strong>WebP</strong> automatically. Save the response <code>id</code> if you need to delete the file later.`,
         exampleCode: `const token = localStorage.getItem('token');
 
 async function uploadToMediaLibrary(file, tag) {
   const formData = new FormData();
-  formData.append('file', file); // field name must be "file"
-  formData.append('tag', tag);   // required — categorization label
+  formData.append('file', file);
+  formData.append('tag', tag);
 
   const res = await fetch('${base}/media/images', {
     method: 'POST',
-    headers: {
-      'Authorization': \`Bearer \${token}\`
-      // NO Content-Type — FormData sets it automatically
-    },
+    headers: { 'Authorization': \`Bearer \${token}\` },
     body: formData
   });
 
-  if (!res.ok) throw new Error('Upload failed: ' + res.status);
-
   const media = await res.json();
-  console.log('Uploaded URL:', media.url);
-  console.log('Media ID:', media.id);   // save this to delete later
-  console.log('Tag:', media.tag);
-  console.log('Size after compression:', media.size, 'bytes');
-
+  console.log('URL:', media.url);
+  console.log('ID:', media.id); // save to delete later
   return media;
-}
-
-// Usage:
-const fileInput = document.querySelector('#imageInput');
-fileInput.addEventListener('change', () => {
-  uploadToMediaLibrary(fileInput.files[0], 'blog-thumbnails');
-});`,
+}`,
       },
 
       {
@@ -897,61 +824,41 @@ fileInput.addEventListener('change', () => {
         description: 'Returns all media files uploaded by the authenticated user. Optionally filter by tag.',
         auth: true, admin: false,
         payloadLabel: 'Query Parameters (no request body)',
-        payload: `// Required Header:
-// Authorization: Bearer YOUR_JWT_TOKEN
+        payload: `// Authorization: Bearer YOUR_JWT_TOKEN
 
 // Optional Query Parameter:
-// ?tag=your-tag  — filter results to only files with this exact tag
+// ?tag=your-tag  — filter results to only files with this tag
 
-// Examples:
-// GET /media                          → all media files for the user (no filter)
-// GET /media?tag=blog-thumbnails      → only files tagged "blog-thumbnails"
-// GET /media?tag=project-alpha        → only files tagged "project-alpha"
+// GET /media                     → all media files
+// GET /media?tag=blog-thumbnails → only files tagged "blog-thumbnails"
 
-// Response: array of MediaEntity objects
-// Returns [] (empty array) if no files found — not a 404`,
+// Returns [] (empty array) if no files found — not 404`,
         howToUse: `Call this to list all images the user has uploaded. Returns an array of <code>MediaEntity</code> objects.<br><br>
-Use the optional <code>?tag=</code> query parameter to filter results by category. This is the primary way to retrieve specific groups of images (e.g. all thumbnails for a blog post, all assets for a project).<br><br>
-Each item in the response includes:<br>
-• <strong>id</strong> — use this to fetch a specific file (<code>GET /media/:id</code>) or delete it (<code>DELETE /media/:id</code>)<br>
-• <strong>url</strong> — the public CDN URL to display the image directly in an <code>&lt;img&gt;</code> tag<br>
-• <strong>tag</strong> — the category label you assigned at upload<br>
+Use the optional <code>?tag=</code> query parameter to filter results by category. Each item includes:<br>
+• <strong>id</strong> — use to fetch or delete a specific file<br>
+• <strong>url</strong> — public CDN URL to display in an <code>&lt;img&gt;</code> tag<br>
+• <strong>tag</strong> — the category label<br>
 • <strong>size</strong> — file size in bytes after compression<br>
 • <strong>createdAt</strong> — upload timestamp<br><br>
-Returns an empty array <code>[]</code> if no files exist for the tag — not a 404. Returns 401 if unauthenticated.`,
+Returns an empty array <code>[]</code> if no files exist — not a 404.`,
         exampleCode: `const token = localStorage.getItem('token');
 
-// Fetch ALL media for the user:
-async function getAllMedia() {
-  const res = await fetch('${base}/media', {
-    headers: { 'Authorization': \`Bearer \${token}\` }
-  });
-  return res.json(); // MediaEntity[]
-}
-
-// Fetch media filtered by tag:
 async function getMediaByTag(tag) {
   const url = \`${base}/media?tag=\${encodeURIComponent(tag)}\`;
   const res = await fetch(url, {
     headers: { 'Authorization': \`Bearer \${token}\` }
   });
-  return res.json(); // MediaEntity[]
+  return res.json();
 }
 
-// Example: render a gallery of blog thumbnails
 getMediaByTag('blog-thumbnails').then(images => {
   const gallery = document.querySelector('#gallery');
-  gallery.innerHTML = '';
-
   images.forEach(img => {
     const el = document.createElement('img');
     el.src = img.url;
-    el.alt = img.tag;
-    el.dataset.mediaId = img.id; // save for potential deletion
+    el.dataset.mediaId = img.id;
     gallery.appendChild(el);
   });
-
-  console.log(\`Loaded \${images.length} images\`);
 });`,
       },
 
@@ -961,58 +868,37 @@ getMediaByTag('blog-thumbnails').then(images => {
         description: 'Returns the full details of a specific media file by its unique ID.',
         auth: true, admin: false,
         payloadLabel: 'Path Parameter (no request body)',
-        payload: `// Required Header:
-// Authorization: Bearer YOUR_JWT_TOKEN
+        payload: `// Authorization: Bearer YOUR_JWT_TOKEN
+// :id — the unique media file ID
 
-// Path Parameter:
-// :id — the unique media file ID (obtained when uploading or from GET /media)
-
-// Example:
-// GET /media/clx9ab12cd34ef56gh78
+// Example: GET /media/clx9ab12cd34ef56gh78
 
 // Response (MediaEntity):
 {
   "id": "clx9ab12cd34ef56gh78",
-  "userId": "clxuser123",
-  "email": "user@example.com",
   "url": "https://cdn.example.com/media/images/uuid.webp",
-  "type": "image",
-  "filename": "media/images/uuid.webp",
+  "tag": "blog-thumbnails",
   "mimeType": "image/webp",
   "size": 45312,
-  "tag": "blog-thumbnails",
-  "createdAt": "2025-06-01T00:00:00.000Z",
-  "updatedAt": "2025-06-01T00:00:00.000Z"
+  "createdAt": "2025-06-01T00:00:00.000Z"
 }`,
         howToUse: `Use this to retrieve the complete details of a single uploaded file by its <code>id</code>.<br><br>
-The <code>id</code> is returned when you upload an image (<code>POST /media/images</code>) and is included in every item from <code>GET /media</code>. Save the <code>id</code> when uploading if you need to reference individual files later.<br><br>
-The response includes all fields of the <code>MediaEntity</code>: the CDN <code>url</code>, <code>tag</code>, <code>mimeType</code>, <code>size</code>, <code>filename</code>, and timestamps.<br><br>
+The <code>id</code> is returned when you upload an image and is included in every item from <code>GET /media</code>.<br><br>
 <strong>Access control:</strong> Only returns files owned by the currently authenticated user. If the ID belongs to another user's file, the server returns 404 (not 403 — to prevent ID enumeration).`,
         exampleCode: `const token = localStorage.getItem('token');
-const mediaId = 'clx9ab12cd34ef56gh78'; // from upload response or GET /media list
+const mediaId = 'clx9ab12cd34ef56gh78';
 
 fetch(\`${base}/media/\${mediaId}\`, {
-  method: 'GET',
-  headers: {
-    'Authorization': \`Bearer \${token}\`
-  }
+  headers: { 'Authorization': \`Bearer \${token}\` }
 })
 .then(res => {
   if (res.status === 404) throw new Error('File not found or access denied');
-  if (!res.ok) throw new Error('Request failed: ' + res.status);
   return res.json();
 })
 .then(media => {
-  console.log('File URL:', media.url);
-  console.log('Tag:', media.tag);
-  console.log('Size:', media.size, 'bytes');
-  console.log('Type:', media.mimeType);
-  console.log('Uploaded at:', media.createdAt);
-
-  // Display the image:
+  console.log('URL:', media.url);
   document.querySelector('#previewImg').src = media.url;
-})
-.catch(err => console.error(err.message));`,
+});`,
       },
 
       {
@@ -1021,52 +907,36 @@ fetch(\`${base}/media/\${mediaId}\`, {
         description: 'Permanently deletes a media file from both the database and cloud storage. This action cannot be undone.',
         auth: true, admin: false,
         payloadLabel: 'Path Parameter (no request body)',
-        payload: `// Required Header:
-// Authorization: Bearer YOUR_JWT_TOKEN
-
-// Path Parameter:
+        payload: `// Authorization: Bearer YOUR_JWT_TOKEN
 // :id — the unique media file ID to delete
 
-// Example:
-// DELETE /media/clx9ab12cd34ef56gh78
+// Example: DELETE /media/clx9ab12cd34ef56gh78
 
 // Response on success:
 // { "message": "Media successfully deleted" }
 
 // After deletion:
-// - The file's URL will return a 404 from cloud storage
-// - The file will no longer appear in GET /media
-// - This action is PERMANENT and cannot be undone`,
+// - The file's URL will return 404 from cloud storage
+// - PERMANENT — cannot be undone`,
         howToUse: `Permanently deletes the media file — both the <strong>database record</strong> and the <strong>file in cloud storage</strong>. This is irreversible.<br><br>
-Only the <strong>owner</strong> of the file can delete it. Attempting to delete another user's file returns 404 (not 403 — to prevent ID enumeration).<br><br>
-After deletion:<br>
-• The file's CDN URL will return a 404 if fetched<br>
-• The file no longer appears in <code>GET /media</code> results<br>
-• Any references to the URL in your database or UI should be cleaned up<br><br>
-<strong>Best practice:</strong> Always confirm with the user before calling delete (e.g. a "Are you sure?" dialog). The action is permanent. Returns 401 if unauthenticated.`,
+Only the <strong>owner</strong> of the file can delete it. Attempting to delete another user's file returns 404.<br><br>
+<strong>Best practice:</strong> Always confirm with the user before calling delete. Returns 401 if unauthenticated.`,
         exampleCode: `const token = localStorage.getItem('token');
 
 async function deleteMedia(mediaId) {
-  // Always confirm before deleting — it's permanent!
   const confirmed = confirm('Delete this file? This cannot be undone.');
   if (!confirmed) return;
 
   const res = await fetch(\`${base}/media/\${mediaId}\`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': \`Bearer \${token}\`
-    }
+    headers: { 'Authorization': \`Bearer \${token}\` }
   });
 
   const data = await res.json();
 
   if (res.ok) {
-    console.log(data.message); // "Media successfully deleted"
-
-    // Remove the element from your UI:
+    console.log(data.message);
     document.querySelector(\`[data-media-id="\${mediaId}"]\`)?.remove();
-  } else if (res.status === 404) {
-    console.error('File not found or access denied');
   } else {
     console.error('Delete failed:', data);
   }
@@ -1141,11 +1011,8 @@ document.querySelectorAll('.delete-media-btn').forEach(btn => {
           <link rel="icon" href="/favicon.ico">
           <script src="https://cdn.tailwindcss.com"></script>
           <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-          <style>
-              body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+          <style>${this.sharedStyles()}
               code, pre { font-family: 'Fira Code', monospace; }
-              .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-              .text-gradient { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
               #promptModal { display: none; }
               #promptModal.active { display: flex; animation: fadeIn 0.3s ease-out; }
               @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1153,35 +1020,31 @@ document.querySelectorAll('.delete-media-btn').forEach(btn => {
               @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
               .flashy-btn {
                   position: relative;
-                  background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+                  background: linear-gradient(90deg, #22d3ee, #6366f1, #d946ef);
                   background-size: 200% auto;
                   color: white;
                   animation: shine 3s linear infinite;
-                  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+                  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
               }
-              .flashy-btn:hover { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
+              .flashy-btn:hover { box-shadow: 0 0 30px rgba(217, 70, 239, 0.6); }
               @keyframes shine { to { background-position: 200% center; } }
           </style>
       </head>
       <body class="min-h-screen flex flex-col relative overflow-x-hidden">
-          <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-900 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
-          <div class="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-900 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+          ${this.renderBlobs()}
 
-          <nav class="w-full glass z-20 px-8 py-4 flex justify-between items-center sticky top-0 border-b border-white/5">
-              <a href="/" class="flex items-center gap-3 group">
-                  <img src="/icon.png" alt="Auth-Pro Icon" class="w-10 h-10 rounded-lg shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
-                  <span class="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-500 text-gradient">Auth-Pro</span>
-              </a>
-              <button onclick="document.getElementById('promptModal').classList.add('active')" class="flashy-btn px-6 py-2.5 rounded-full font-bold transition-all transform hover:scale-105 flex items-center gap-2 text-sm">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  Copy AI Prompt
-              </button>
-          </nav>
+          ${this.renderNav(
+            'docs',
+            `<button onclick="document.getElementById('promptModal').classList.add('active')" class="flashy-btn px-4 sm:px-6 py-2.5 rounded-full font-bold transition-all transform hover:scale-105 flex items-center gap-2 text-sm">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                      <span class="hidden sm:inline">Copy AI Prompt</span>
+                  </button>`,
+          )}
 
           <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-8 z-10 pb-24">
               <div class="text-center mb-16 mt-8">
-                  <span class="bg-blue-500/10 text-blue-400 px-4 py-1.5 rounded-full text-sm font-semibold border border-blue-500/20 tracking-wide uppercase">15 Endpoints · Beginner Friendly</span>
-                  <h1 class="text-5xl font-extrabold mb-6 mt-6 tracking-tight">API <span class="bg-gradient-to-r from-sky-400 to-indigo-400 text-gradient">Documentation</span></h1>
+                  <span class="glass inline-block px-4 py-1.5 rounded-full text-sm font-semibold text-sky-300 tracking-wide uppercase">15 Endpoints · Beginner Friendly</span>
+                  <h1 class="text-5xl font-extrabold mb-6 mt-6 tracking-tight">API <span class="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 text-gradient">Documentation</span></h1>
                   <p class="text-slate-400 text-lg max-w-3xl mx-auto leading-relaxed">Complete reference for all Auth-Pro endpoints. Each entry includes the exact payload, a detailed usage guide, and a ready-to-paste JavaScript example.</p>
               </div>
 
@@ -1202,7 +1065,7 @@ ${htmlContent}
           <div id="promptModal" class="fixed inset-0 z-50 items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
               <div class="modal-content glass max-w-3xl w-full rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-white/10">
                   <div class="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
-                      <h3 class="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-500 text-gradient">AI Implementation Prompt</h3>
+                      <h3 class="text-2xl font-bold bg-gradient-to-r from-cyan-300 to-fuchsia-400 text-gradient">AI Implementation Prompt</h3>
                       <button onclick="document.getElementById('promptModal').classList.remove('active')" class="text-slate-400 hover:text-white transition bg-white/5 hover:bg-white/10 p-2 rounded-lg">
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                       </button>
@@ -1210,12 +1073,12 @@ ${htmlContent}
                   <div class="p-6 overflow-y-auto flex-grow bg-slate-950/50">
                       <p class="text-sm text-slate-300 mb-4 font-medium">Paste this into Claude, ChatGPT, or any AI to instantly generate your frontend auth integration!</p>
                       <div class="relative group">
-                          <textarea id="promptText" readonly class="w-full h-72 bg-[#0a0f1c] text-green-400 font-mono text-sm p-5 rounded-xl border border-slate-700/50 focus:outline-none focus:border-purple-500/50 resize-none shadow-inner">${aiPrompt}</textarea>
+                          <textarea id="promptText" readonly class="w-full h-72 bg-black/40 text-emerald-300 font-mono text-sm p-5 rounded-xl border border-white/10 focus:outline-none focus:border-fuchsia-500/50 resize-none shadow-inner">${aiPrompt}</textarea>
                       </div>
                   </div>
                   <div class="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
                       <button onclick="document.getElementById('promptModal').classList.remove('active')" class="px-6 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition font-medium">Close</button>
-                      <button onclick="copyPrompt()" id="copyBtn" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition flex items-center gap-2 shadow-lg shadow-purple-500/20">
+                      <button onclick="copyPrompt()" id="copyBtn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold transition flex items-center gap-2 shadow-lg shadow-fuchsia-500/20">
                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                           Copy Prompt
                       </button>
@@ -1231,12 +1094,12 @@ ${htmlContent}
                   const btn = document.getElementById('copyBtn');
                   const originalHtml = btn.innerHTML;
                   btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!';
-                  btn.classList.add('bg-green-500', 'shadow-green-500/20');
-                  btn.classList.remove('bg-purple-600', 'shadow-purple-500/20');
+                  btn.classList.add('bg-emerald-500', 'shadow-emerald-500/20');
+                  btn.classList.remove('bg-gradient-to-r', 'from-violet-600', 'to-fuchsia-600', 'shadow-fuchsia-500/20');
                   setTimeout(() => {
                       btn.innerHTML = originalHtml;
-                      btn.classList.remove('bg-green-500', 'shadow-green-500/20');
-                      btn.classList.add('bg-purple-600', 'shadow-purple-500/20');
+                      btn.classList.remove('bg-emerald-500', 'shadow-emerald-500/20');
+                      btn.classList.add('bg-gradient-to-r', 'from-violet-600', 'to-fuchsia-600', 'shadow-fuchsia-500/20');
                   }, 2000);
               }
           </script>

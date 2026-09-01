@@ -5,6 +5,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { getEnvSummary } from './config/env-guide';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -21,6 +22,7 @@ async function bootstrap() {
       directives: {
         defaultSrc:    ["'self'"],
         scriptSrc:     ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc:       ["'self'", 'https://fonts.gstatic.com', 'data:'],
         imgSrc:        ["'self'", 'data:', 'https:'],
@@ -58,5 +60,16 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Application is running on: ${process.env.API_URL}/api`);
+
+  const summary = getEnvSummary();
+  const port = process.env.PORT ?? 3000;
+  console.log(
+    `${summary.configured}/${summary.total} environment variables configured — visit http://localhost:${port} to finish setup.`,
+  );
+  if (summary.missing > 0) {
+    console.log(
+      `⚠️  ${summary.missing} required variable(s) still missing — some features will not work until they're set.`,
+    );
+  }
 }
 bootstrap();

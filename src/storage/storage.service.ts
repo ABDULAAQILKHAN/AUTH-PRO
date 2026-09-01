@@ -9,6 +9,17 @@ export class StorageService {
   private readonly logger = new Logger(StorageService.name);
 
   constructor() {
+    if (
+      !process.env.R2_ACCOUNT_ID ||
+      !process.env.R2_ACCESS_KEY_ID ||
+      !process.env.R2_SECRET_ACCESS_KEY ||
+      !process.env.R2_BUCKET_NAME
+    ) {
+      this.logger.warn(
+        'Cloudflare R2 credentials are not fully configured — file uploads will fail until R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME are set. ' +
+        `Visit http://localhost:${process.env.PORT ?? 3000} for setup steps.`,
+      );
+    }
     this.s3Client = new S3Client({
       region: 'auto',
       endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,

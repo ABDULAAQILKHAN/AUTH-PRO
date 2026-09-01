@@ -933,38 +933,122 @@ document.querySelectorAll('.delete-media-btn').forEach(btn =&gt; {
             <div class="p-6 overflow-y-auto flex-grow bg-slate-950/50">
                 <p class="text-sm text-slate-300 mb-4 font-medium">Paste this into Claude, ChatGPT, or any AI to instantly generate your frontend auth integration!</p>
                 <div class="relative group">
-                    <textarea id="promptText" readonly class="w-full h-72 bg-[#0a0f1c] text-green-400 font-mono text-sm p-5 rounded-xl border border-slate-700/50 focus:outline-none focus:border-purple-500/50 resize-none shadow-inner">You are an expert AI coding assistant helping the user integrate Auth-Pro into their frontend application.
+                    <textarea id="promptText" readonly class="w-full h-72 bg-[#0a0f1c] text-green-400 font-mono text-sm p-5 rounded-xl border border-slate-700/50 focus:outline-none focus:border-purple-500/50 resize-none shadow-inner">You are an expert AI coding assistant helping the user integrate Auth-Pro into their frontend application. Auth-Pro is a self-hosted backend providing JWT authentication, transactional email, and file/media storage — all 15 endpoints below are already live and working, so just wire up the frontend calls exactly as specified.
 
 BASE URL: https://your-api-url.com
 All requests use JSON bodies unless noted as multipart/form-data.
 Protected routes require the header:  Authorization: Bearer &lt;accessToken&gt;
 
 AUTH ENDPOINTS
-1. POST /auth/signup       — Body: { email, password, redirectUrl, metadata? }  → { accessToken }
-2. POST /auth/login        — Body: { email, password }                           → { accessToken }
-3. POST /auth/forgot-password — Body: { email, redirectUrl }                    → { message }
-4. POST /auth/update-password — Body: { token, newPassword }                    → { message }
-5. GET  /auth/verify-email    — clicked from email, redirects to your app
-6. GET  /auth/reset-password  — clicked from email, appends token to redirectUrl
+
+1. POST /auth/signup
+   Body: { email, password, redirectUrl, metadata? }  → { accessToken }
+   Notes: Logs the user in immediately (token is valid before email verification). Sends a
+          verification email whose link hits GET /auth/verify-email, which then redirects
+          the browser to your redirectUrl.
+
+2. POST /auth/login
+   Body: { email, password }  → { accessToken }
+   Notes: Store the token and attach it to every protected request. Returns 401 for wrong
+          credentials or a banned user.
+
+3. POST /auth/forgot-password
+   Body: { email, redirectUrl }  → { message }
+   Notes: Always returns the same message, whether or not the email exists (prevents
+          enumeration). Emails a link to GET /auth/reset-password, which redirects to YOUR
+          redirectUrl with ?token=TOKEN appended.
+
+4. POST /auth/update-password
+   Body: { token, newPassword }  → { message }
+   Notes: Call from your reset-password page after reading token from the URL. Tokens are
+          single-use and expire — invalid/expired tokens return 400.
+
+5. GET /auth/verify-email?token=TOKEN&amp;redirectUrl=URL
+   Notes: Not called from your code — this is the email link the user clicks. Marks the
+          email verified, then redirects to redirectUrl (or returns JSON if omitted).
+
+6. GET /auth/reset-password?token=TOKEN&amp;redirectUrl=URL
+   Notes: Not called from your code — this is the forgot-password email link. Appends the
+          token to redirectUrl and redirects the browser there.
 
 USER ENDPOINTS  (require Authorization: Bearer &lt;token&gt;)
-7. GET   /users/me    → { id, email, avatarUrl, metadata, isEmailVerified, createdAt, updatedAt }
-8. PATCH /users/me    — Body: { metadata?: object }  (deep merge)
-9. POST  /users/avatar — multipart/form-data: file
 
-ADMIN ENDPOINTS (no JWT — use adminPass matching ADMIN_PASS env var)
-10. POST /users/ban         — Body: { adminPass, userId }
-11. POST /mail/send-custom  — Body: { adminPass, to, subject, htmlTemplate }
+7. GET /users/me
+   Response: { id, email, avatarUrl, metadata, isEmailVerified, createdAt, updatedAt }
+   Notes: password is never returned. 401 if the token is missing/invalid/expired.
 
-MEDIA ENDPOINTS (require Authorization: Bearer &lt;token&gt;)
-12. POST   /media/images  — multipart/form-data: file, tag
-13. GET    /media         — ?tag=optional
-14. GET    /media/:id
+8. PATCH /users/me
+   Body: { metadata?: object }  → updated user object
+   Notes: DEEP MERGE, not replace — only sent keys change. Delete a key by sending it as
+          null: { metadata: { keyToRemove: null } }
+
+9. POST /users/avatar   [multipart/form-data]
+   Form fields: file (required)  → updated user object with new avatarUrl
+   Notes: Do NOT set Content-Type manually — let FormData/fetch set it. Auto-compressed to
+          WebP and stored in cloud storage.
+
+10. POST /users/ban   [Admin — no JWT, uses adminPass instead]
+    Body: { adminPass, userId }  → updated user object
+    Notes: adminPass must equal the server's ADMIN_PASS env var. Get userId from
+           GET /users/me or your database. Only call from a secure server-side context —
+           never expose adminPass in a public frontend.
+
+MAIL ENDPOINTS  (Admin — no JWT, uses adminPass instead)
+
+11. POST /mail/send-custom
+    Body: { adminPass, to, subject, htmlTemplate }  → { message }
+    Notes: htmlTemplate is raw HTML — use inline CSS (style="...") since most email clients
+           strip &lt;style&gt; tags, and absolute image URLs.
+
+MEDIA ENDPOINTS  (require Authorization: Bearer &lt;token&gt;)
+
+12. POST /media/images   [multipart/form-data]
+    Form fields: file (required), tag (required — category label)
+    Response: { id, url, tag, mimeType, size, filename, createdAt }
+    Notes: Builds a per-user media library (unlike /users/avatar, which is one profile
+           picture). Auto-compressed to WebP. Save id to delete later.
+
+13. GET /media?tag=OPTIONAL_TAG
+    Response: array of media objects (empty array if none — not 404)
+    Notes: Omit ?tag to list everything, or filter to one category.
+
+14. GET /media/:id
+    Response: single media object
+    Notes: Only returns files owned by the authenticated user — another user's file ID
+           returns 404, not 403, to avoid ID enumeration.
+
 15. DELETE /media/:id
+    Response: { message }
+    Notes: PERMANENT — removes the file from both the database and cloud storage. Only the
+           owner can delete it.
 
-Password rules: min 8 chars, uppercase, lowercase, number, special char (@$!%*?&amp;)
-Token storage: store accessToken in localStorage, attach as Authorization: Bearer &lt;token&gt;
-metadata: free-form JSON, deep-merged on PATCH /users/me</textarea>
+KEY RULES &amp; PATTERNS
+
+Password strength: min 8 chars, at least one uppercase, one lowercase, one number, and one
+  special character from: @$!%*?&amp;
+
+Token storage: store accessToken from login/signup (localStorage or a secure cookie) and
+  attach it to every protected request as Authorization: Bearer &lt;token&gt;
+
+metadata field: free-form JSON per user — name, phone, plan, preferences, onboarding state,
+  etc. PATCH /users/me deep-merges every update.
+
+Email verification flow:
+  signup (with redirectUrl) → email sent → user clicks link → GET /auth/verify-email →
+  redirects to your redirectUrl
+
+Password reset flow:
+  forgot-password (with redirectUrl) → email sent → user clicks link →
+  GET /auth/reset-password → redirects to YOUR redirectUrl?token=TOKEN → your page reads
+  the token → POST /auth/update-password
+
+Admin authentication: /users/ban and /mail/send-custom use an adminPass field instead of a
+  JWT — it must match the ADMIN_PASS environment variable. Never call these from a public
+  frontend.
+
+Error handling: expect 400 for validation errors, 401 for missing/invalid tokens or wrong
+  admin password, 404 for missing/not-owned resources. Avatar and media endpoints never
+  reveal another user's data via 403 — they return 404 instead.</textarea>
                 </div>
             </div>
             <div class="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
